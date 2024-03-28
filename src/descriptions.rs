@@ -47,7 +47,7 @@ pub const WAIT: &str = include_str!("descriptions/WAIT.md");
 pub const WITH_DOCKER: &str = include_str!("descriptions/WITH-DOCKER.md");
 pub const WORKDIR: &str = include_str!("descriptions/WORKDIR-same-as-Dockerfile-WORKDIR.md");
 
-pub fn command_description(cmd: &str) -> Option<&str> {
+pub fn command_description(cmd: &str) -> Option<&'static str> {
     match cmd {
         "ADD" => Some(ADD),
         "ARG" => Some(ARG),

@@ -79,12 +79,21 @@ impl LanguageServer for Backend {
         let tree = self.doc_trees.get(&uri).unwrap(); // FIXME: we should actually deal with the error
         let root_node = tree.root_node();
         let pos = Point { row: pos.line as usize, column: pos.character as usize };
+        // search a description to show to the user
         let mut cursor = root_node.walk();
+        let mut description = None;
         while let Some(_) = cursor.goto_first_child_for_point(pos) {
-            self.client.log_message(MessageType::INFO, format!("{:?}", cursor.node())).await;
+            let name = cursor
+                .node()
+                .grammar_name()
+                .replace("_command", "")
+                .to_uppercase()
+                .replace("_", " ");
+            if let Some(d) = command_description(&name) {
+                description = Some(d);
+            }
         }
-        let name = cursor.node().grammar_name();
-        if let Some(description) = command_description(name) {
+        if let Some(description) = description {
             let markup_content =
                 MarkupContent { kind: MarkupKind::Markdown, value: description.to_owned() };
             let hover_contents = HoverContents::Markup(markup_content);
