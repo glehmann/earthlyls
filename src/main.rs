@@ -78,7 +78,7 @@ impl LanguageServer for Backend {
         let uri = &params.text_document_position_params.text_document.uri;
         let tree = self.doc_trees.get(&uri).unwrap(); // FIXME: we should actually deal with the error
         let root_node = tree.root_node();
-        let pos = Point { row: pos.line as usize, column: pos.character as usize };
+        let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         // search a description to show to the user
         let mut cursor = root_node.walk();
         let mut description = None;
