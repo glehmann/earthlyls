@@ -83,12 +83,7 @@ impl LanguageServer for Backend {
         let mut cursor = root_node.walk();
         let mut description = None;
         while let Some(_) = cursor.goto_first_child_for_point(pos) {
-            let name = cursor
-                .node()
-                .grammar_name()
-                .replace("_command", "")
-                .to_uppercase()
-                .replace("_", " ");
+            let name = cursor.node().grammar_name();
             if let Some(d) = command_description(&name) {
                 description = Some(d);
             }
