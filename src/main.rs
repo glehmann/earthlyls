@@ -29,6 +29,10 @@ impl Backend {
         let tree = self.parser.lock().await.parse(content, None).unwrap(); // TODO: check what can make the parser completely fail, and maybe deal with the possible failure
         self.doc_trees.insert(url.to_owned(), tree);
     }
+
+    async fn remove_doc(&self, url: &Url) {
+        self.doc_trees.remove(url);
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -71,6 +75,10 @@ impl LanguageServer for Backend {
             )
             .await;
         self.add_doc(&params.text_document.uri, &params.text_document.text).await;
+    }
+
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        self.remove_doc(&params.text_document.uri).await;
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
