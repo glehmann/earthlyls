@@ -23,13 +23,12 @@ pub fn parse_rope(rope: &Rope, old_tree: Option<&Tree>) -> Tree {
         .lock()
         .unwrap()
         .parse_with(
-            &mut |_byte: usize, pos: Point| -> String {
-                // TODO: it should be possible to avoid memory allocation here by using as_str() on the current
-                // chunk
-                if let Some(line) = rope.get_line(pos.row as usize) {
-                    line.slice(pos.column..).to_string()
+            &mut |byte: usize, _pos: Point| -> &[u8] {
+                if let Some((text, byte_idx, _, _)) = rope.get_chunk_at_byte(byte) {
+                    let start = byte - byte_idx;
+                    &text.as_bytes()[start..]
                 } else {
-                    String::new()
+                    &[]
                 }
             },
             old_tree,
