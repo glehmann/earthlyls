@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 dashmap = "5.5.3"
+ropey = "1.6.1"
 tokio = { version = "1.36.0", features = ["full"] }
 tower-lsp = "0.20.0"
 tree-sitter = "0.22.2"

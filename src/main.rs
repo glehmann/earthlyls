@@ -1,18 +1,18 @@
-use std::sync::Arc;
+mod document;
+mod parser;
 
 use dashmap::DashMap;
+use document::Document;
 use earthlyls::descriptions::command_description;
-use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use tree_sitter::{Parser, Point, Tree};
+use tree_sitter::{Parser, Point};
 
 // #[derive(Debug)]
 struct Backend {
     client: Client,
-    doc_trees: DashMap<Url, Tree>,
-    parser: Arc<Mutex<Parser>>,
+    docs: DashMap<Url, Document>,
 }
 
 impl Backend {
@@ -21,17 +21,7 @@ impl Backend {
         parser
             .set_language(&tree_sitter_earthfile::language())
             .expect("Unable to load the earthfile language");
-        let parser = Arc::new(Mutex::new(parser));
-        Backend { client, doc_trees: Default::default(), parser }
-    }
-
-    async fn add_doc(&self, url: &Url, content: &str) {
-        let tree = self.parser.lock().await.parse(content, None).unwrap(); // TODO: check what can make the parser completely fail, and maybe deal with the possible failure
-        self.doc_trees.insert(url.to_owned(), tree);
-    }
-
-    async fn remove_doc(&self, url: &Url) {
-        self.doc_trees.remove(url);
+        Backend { client, docs: Default::default() }
     }
 }
 
@@ -68,23 +58,31 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!("adding {:?} doc", params.text_document.uri.path()),
-            )
-            .await;
-        self.add_doc(&params.text_document.uri, &params.text_document.text).await;
+        self.docs.insert(
+            params.text_document.uri.to_owned(),
+            Document::from_str(&params.text_document.text),
+        );
+    }
+
+    async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let uri = params.text_document.uri;
+        for change in params.content_changes {
+            if let Some(range) = change.range {
+                self.docs.get_mut(&uri).unwrap().update(range, &change.text); // TODO: remove the unwrap()?
+            } else {
+                self.docs.insert(uri.to_owned(), Document::from_str(&change.text));
+            }
+        }
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.remove_doc(&params.text_document.uri).await;
+        self.docs.remove(&params.text_document.uri);
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let pos = params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
-        let tree = self.doc_trees.get(&uri).unwrap(); // FIXME: we should actually deal with the error
+        let tree = &self.docs.get(&uri).unwrap().tree; // FIXME: we should actually deal with the error
         let root_node = tree.root_node();
         let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         // search a description to show to the user
