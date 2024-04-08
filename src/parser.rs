@@ -1,5 +1,5 @@
 use ropey::Rope;
-use tree_sitter::{Parser, Point, Tree};
+use tree_sitter::{Language, Parser, Point, Tree};
 
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -12,6 +12,10 @@ fn parser() -> &'static Arc<Mutex<Parser>> {
             .expect("Unable to load the earthfile language");
         Arc::new(Mutex::new(parser))
     })
+}
+
+pub fn language() -> Language {
+    tree_sitter_earthfile::language()
 }
 
 pub fn parse(text: impl AsRef<[u8]>, old_tree: Option<&Tree>) -> Tree {

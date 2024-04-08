@@ -1,13 +1,13 @@
-mod document;
-mod parser;
-
 use dashmap::DashMap;
-use document::Document;
-use earthlyls::descriptions::command_description;
+use earthlyls::queries::target_name;
+use earthlyls::util::ToLSPRange;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tree_sitter::{Parser, Point};
+
+use earthlyls::descriptions::command_description;
+use earthlyls::document::Document;
 
 // #[derive(Debug)]
 struct Backend {
@@ -30,6 +30,7 @@ impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
+                definition_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
@@ -80,7 +81,7 @@ impl LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let pos = params.text_document_position_params.position;
+        let pos = &params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
         let tree = &self.docs.get(&uri).unwrap().tree; // FIXME: we should actually deal with the error
         let root_node = tree.root_node();
@@ -103,6 +104,35 @@ impl LanguageServer for Backend {
         } else {
             Ok(None)
         }
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let pos = &params.text_document_position_params.position;
+        let uri = &params.text_document_position_params.text_document.uri;
+        let doc = &self.docs.get(&uri).unwrap(); // FIXME: we should actually deal with the error
+        let root_node = doc.tree.root_node();
+        let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
+        let mut cursor = root_node.walk();
+        while let Some(_) = cursor.goto_first_child_for_point(pos) {
+            if cursor.node().grammar_name() == "target_ref" {
+                let node = cursor.node();
+                if let Some(name_node) = node.child_by_field_name("name") {
+                    let name = doc.rope.slice(name_node.byte_range()).to_string();
+                    for node in doc.captures(target_name()) {
+                        if doc.node_content(node) == name {
+                            return Ok(Some(GotoDefinitionResponse::Scalar(Location {
+                                uri: uri.to_owned(),
+                                range: node.range().to_lsp_range(),
+                            })));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(None)
     }
 }
 

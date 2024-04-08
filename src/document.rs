@@ -1,6 +1,8 @@
 use ropey::Rope;
 use tower_lsp::lsp_types::Range;
-use tree_sitter::{InputEdit, Point, Tree};
+use tree_sitter::{InputEdit, Node, Point, Query, QueryCursor, Tree};
+
+use crate::util::RopeProvider;
 
 pub struct Document {
     pub rope: Rope,
@@ -69,6 +71,23 @@ impl Document {
         }));
         self.tree = crate::parser::parse_rope(&mut self.rope, Some(&self.tree));
         dbg!(&self.tree);
+    }
+
+    pub fn captures<'doc>(self: &'doc Self, query: &Query) -> Vec<Node<'doc>> {
+        let mut query_cursor = QueryCursor::new();
+        let captures =
+            query_cursor.captures(&query, self.tree.root_node(), RopeProvider(self.rope.slice(..)));
+        let mut res: Vec<Node<'doc>> = Vec::new();
+        for (m, _) in captures {
+            for c in m.captures {
+                res.push(c.node);
+            }
+        }
+        res
+    }
+
+    pub fn node_content(&self, node: Node) -> String {
+        self.rope.byte_slice(node.byte_range()).to_string()
     }
 }
 
