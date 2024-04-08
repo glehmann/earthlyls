@@ -120,7 +120,7 @@ impl LanguageServer for Backend {
             if cursor.node().grammar_name() == "target_ref" {
                 let node = cursor.node();
                 if let Some(name_node) = node.child_by_field_name("name") {
-                    let name = doc.rope.slice(name_node.byte_range()).to_string();
+                    let name = doc.node_content(name_node);
                     for node in doc.captures(target_name()) {
                         if doc.node_content(node) == name {
                             return Ok(Some(GotoDefinitionResponse::Scalar(Location {
