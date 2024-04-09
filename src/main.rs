@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use dashmap::DashMap;
 use earthlyls::queries::target_name;
 use earthlyls::util::ToLSPRange;
@@ -13,6 +16,7 @@ use earthlyls::document::Document;
 struct Backend {
     client: Client,
     docs: DashMap<Url, Document>,
+    workspaces: DashMap<String, PathBuf>,
 }
 
 impl Backend {
@@ -21,13 +25,31 @@ impl Backend {
         parser
             .set_language(&tree_sitter_earthfile::language())
             .expect("Unable to load the earthfile language");
-        Backend { client, docs: Default::default() }
+        Backend { client, docs: Default::default(), workspaces: Default::default() }
     }
 }
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        if let Some(workspaces) = params.workspace_folders {
+            for workspace in workspaces {
+                if workspace.uri.scheme() == "file" {
+                    self.workspaces
+                        .insert(workspace.name, PathBuf::from_str(workspace.uri.path()).unwrap());
+                } else {
+                    self.client
+                        .log_message(MessageType::ERROR, "Unsupported workspace scheme")
+                        .await;
+                }
+            }
+        } else if let Some(root) = params.root_uri {
+            self.workspaces.insert("default".into(), PathBuf::from_str(root.path()).unwrap());
+        // } else if let Some(root) = params.root_path {
+        //     self.workspaces.insert("default".into(), PathBuf::from_str(&root).unwrap());
+        } else {
+            self.client.log_message(MessageType::ERROR, "no workspace configuration").await;
+        }
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
@@ -118,8 +140,7 @@ impl LanguageServer for Backend {
         let mut cursor = root_node.walk();
         while let Some(_) = cursor.goto_first_child_for_point(pos) {
             if cursor.node().grammar_name() == "target_ref" {
-                let node = cursor.node();
-                if let Some(name_node) = node.child_by_field_name("name") {
+                if let Some(name_node) = cursor.node().child_by_field_name("name") {
                     let name = doc.node_content(name_node);
                     for node in doc.captures(target_name()) {
                         if doc.node_content(node) == name {
