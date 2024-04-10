@@ -27,11 +27,28 @@ impl Backend {
             .expect("Unable to load the earthfile language");
         Backend { client, docs: Default::default(), workspaces: Default::default() }
     }
+
+    fn load_workspace_docs(&self) {
+        // add the earthfiles in the workspace in self.docs
+        for item in self.workspaces.iter() {
+            let dir = item.value();
+            // let name = item.key();
+            for f in glob::glob(&format!("{}/**/Earthfile", dir.to_string_lossy())).unwrap() {
+                let path = dbg!(f.unwrap());
+                self.docs.insert(
+                    Url::from_file_path(&path).unwrap(),
+                    Document::from_str(&std::fs::read_to_string(&path).unwrap()),
+                );
+            }
+        }
+        dbg!(self.docs.len());
+    }
 }
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        // store the workspaces locations
         if let Some(workspaces) = params.workspace_folders {
             for workspace in workspaces {
                 if workspace.uri.scheme() == "file" {
@@ -50,6 +67,7 @@ impl LanguageServer for Backend {
         } else {
             self.client.log_message(MessageType::ERROR, "no workspace configuration").await;
         }
+        self.load_workspace_docs();
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
