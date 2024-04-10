@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use dashmap::DashMap;
 use earthlyls::queries::target_name;
-use earthlyls::util::ToLSPRange;
+use earthlyls::util::{request_failed, ToLSPRange};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
@@ -11,6 +11,7 @@ use tree_sitter::{Parser, Point};
 
 use earthlyls::descriptions::command_description;
 use earthlyls::document::Document;
+use earthlyls::error::{self, GlobResultExt, IOResultExt};
 
 // #[derive(Debug)]
 struct Backend {
@@ -28,20 +29,33 @@ impl Backend {
         Backend { client, docs: Default::default(), workspaces: Default::default() }
     }
 
-    fn load_workspace_docs(&self) {
-        // add the earthfiles in the workspace in self.docs
+    async fn load_workspaces_docs(&self) {
         for item in self.workspaces.iter() {
             let dir = item.value();
-            // let name = item.key();
-            for f in glob::glob(&format!("{}/**/Earthfile", dir.to_string_lossy())).unwrap() {
-                let path = dbg!(f.unwrap());
-                self.docs.insert(
-                    Url::from_file_path(&path).unwrap(),
-                    Document::from_str(&std::fs::read_to_string(&path).unwrap()),
-                );
+            let name = item.key();
+            if let Err(e) = self.load_workspace_docs(dir) {
+                self.client
+                    .log_message(
+                        MessageType::ERROR,
+                        format!("Can't load {name} workspace documents: {}", e),
+                    )
+                    .await;
             }
         }
         dbg!(self.docs.len());
+    }
+
+    fn load_workspace_docs(&self, dir: &Path) -> error::Result<()> {
+        let glob_expr = &format!("{}/**/Earthfile", dir.to_string_lossy());
+        for f in glob::glob(glob_expr).glob_ctx(glob_expr)? {
+            let path = f?;
+            self.docs.insert(
+                Url::from_file_path(&path)
+                    .map_err(|_| error::EarthlylsError::PathToUrl { path: path.to_owned() })?,
+                Document::from_str(&std::fs::read_to_string(&path).path_ctx(path)?),
+            );
+        }
+        Ok(())
     }
 }
 
@@ -67,7 +81,7 @@ impl LanguageServer for Backend {
         } else {
             self.client.log_message(MessageType::ERROR, "no workspace configuration").await;
         }
-        self.load_workspace_docs();
+        self.load_workspaces_docs().await;
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
@@ -108,9 +122,14 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         for change in params.content_changes {
+            let mut updated = false;
             if let Some(range) = change.range {
-                self.docs.get_mut(&uri).unwrap().update(range, &change.text); // TODO: remove the unwrap()?
-            } else {
+                if let Some(mut doc) = self.docs.get_mut(&uri) {
+                    doc.update(range, &change.text);
+                    updated = true;
+                }
+            }
+            if !updated {
                 self.docs.insert(uri.to_owned(), Document::from_str(&change.text));
             }
         }
@@ -123,7 +142,7 @@ impl LanguageServer for Backend {
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let pos = &params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
-        let tree = &self.docs.get(&uri).unwrap().tree; // FIXME: we should actually deal with the error
+        let tree = &self.docs.get(&uri).ok_or(request_failed("unknown document"))?.tree;
         let root_node = tree.root_node();
         let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         // search a description to show to the user
@@ -152,7 +171,7 @@ impl LanguageServer for Backend {
     ) -> Result<Option<GotoDefinitionResponse>> {
         let pos = &params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
-        let doc = &self.docs.get(&uri).unwrap(); // FIXME: we should actually deal with the error
+        let doc = &self.docs.get(&uri).ok_or(request_failed("unknown document"))?;
         let root_node = doc.tree.root_node();
         let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         let mut cursor = root_node.walk();

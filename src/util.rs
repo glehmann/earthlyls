@@ -1,5 +1,5 @@
 use ropey::RopeSlice;
-use tower_lsp::lsp_types;
+use tower_lsp::{jsonrpc::Error, lsp_types};
 use tree_sitter::{Node, TextProvider};
 
 /// Adapter to use a rope slice in tree-sitter queries
@@ -26,5 +26,13 @@ impl ToLSPRange for tree_sitter::Range {
                 character: self.end_point.column as u32,
             },
         }
+    }
+}
+
+pub fn request_failed(msg: &str) -> Error {
+    Error {
+        code: tower_lsp::jsonrpc::ErrorCode::ServerError(-32803),
+        message: std::borrow::Cow::Owned(msg.to_owned()),
+        data: None,
     }
 }
