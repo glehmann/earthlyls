@@ -94,6 +94,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "clean-path"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aaa6b4b263a5d737e9bf6b7c09b72c41a5480aec4d7219af827f6564e950b6a5"
+
+[[package]]
 name = "dashmap"
 version = "5.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -110,6 +116,7 @@ dependencies = [
 name = "earthlyls"
 version = "0.1.0"
 dependencies = [
+ "clean-path",
  "dashmap",
  "glob",
  "ropey",
@@ -752,9 +759,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-earthfile"
-version = "0.1.2"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc93e13653014847c6f14dfe44c3d636a5340dba3451742baa6067d837216c71"
+checksum = "d8e03df3d40b1dd4f57ce893bb778312a05747b271311050bf2b493b26a834c1"
 dependencies = [
  "cc",
  "tree-sitter",

@@ -1,13 +1,14 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use clean_path::Clean;
 use dashmap::DashMap;
 use earthlyls::queries::target_name;
 use earthlyls::util::{request_failed, ToLSPRange};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use tree_sitter::{Parser, Point};
+use tree_sitter::{Node, Parser, Point};
 
 use earthlyls::descriptions::command_description;
 use earthlyls::document::Document;
@@ -142,7 +143,7 @@ impl LanguageServer for Backend {
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let pos = &params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
-        let tree = &self.docs.get(&uri).ok_or(request_failed("unknown document"))?.tree;
+        let tree = &self.docs.get(&uri).ok_or_else(|| request_failed("unknown document"))?.tree;
         let root_node = tree.root_node();
         let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         // search a description to show to the user
@@ -171,23 +172,46 @@ impl LanguageServer for Backend {
     ) -> Result<Option<GotoDefinitionResponse>> {
         let pos = &params.text_document_position_params.position;
         let uri = &params.text_document_position_params.text_document.uri;
-        let doc = &self.docs.get(&uri).ok_or(request_failed("unknown document"))?;
+        let doc = &self.docs.get(&uri).ok_or_else(|| request_failed("unknown document"))?;
         let root_node = doc.tree.root_node();
         let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
         let mut cursor = root_node.walk();
+        let mut target_node: Option<Node> = None;
         while let Some(_) = cursor.goto_first_child_for_point(pos) {
             if cursor.node().grammar_name() == "target_ref" {
-                if let Some(name_node) = cursor.node().child_by_field_name("name") {
-                    let name = doc.node_content(name_node);
-                    for node in doc.captures(target_name()) {
-                        if doc.node_content(node) == name {
-                            return Ok(Some(GotoDefinitionResponse::Scalar(Location {
-                                uri: uri.to_owned(),
-                                range: node.range().to_lsp_range(),
-                            })));
-                        }
-                    }
-                }
+                target_node = Some(cursor.node());
+                break;
+            }
+        }
+        let Some(target_node) = target_node else {
+            return Ok(None);
+        };
+        let Some(name_node) = target_node.child_by_field_name("name") else {
+            return Ok(None);
+        };
+        let target_uri =
+            if let Some(earthfile_ref_node) = target_node.child_by_field_name("earthfile") {
+                let earthfile = doc.node_content(earthfile_ref_node);
+                let path = PathBuf::from_str(uri.path())
+                    .map_err(|_| request_failed("can't compute the earthfile path"))?;
+                let path = path
+                    .parent()
+                    .ok_or_else(|| request_failed("can’t compute the current Earthfile parent"))?;
+                let path = path.join(earthfile).join("Earthfile").clean();
+                Url::from_file_path(path)
+                    .map_err(|_| request_failed("can't convert the earthfile path to an url"))?
+            } else {
+                uri.to_owned()
+            };
+        let name = doc.node_content(name_node);
+        let target_doc =
+            &self.docs.get(&target_uri).ok_or_else(|| request_failed("unknown document"))?;
+        for node in target_doc.captures(target_name()) {
+            if target_doc.node_content(node) == name {
+                return Ok(Some(GotoDefinitionResponse::Scalar(Location {
+                    uri: target_uri.to_owned(),
+                    range: node.range().to_lsp_range(),
+                })));
             }
         }
         Ok(None)
