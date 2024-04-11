@@ -178,7 +178,7 @@ impl LanguageServer for Backend {
         let mut cursor = root_node.walk();
         let mut target_node: Option<Node> = None;
         while let Some(_) = cursor.goto_first_child_for_point(pos) {
-            if cursor.node().grammar_name() == "target_ref" {
+            if ["target_ref", "function_ref"].contains(&cursor.node().grammar_name()) {
                 target_node = Some(cursor.node());
                 break;
             }
