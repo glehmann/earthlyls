@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Instant;
 
 use dashmap::DashMap;
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer};
@@ -57,6 +58,7 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        let now = Instant::now();
         // store the workspaces locations
         if let Some(workspaces) = params.workspace_folders {
             for workspace in workspaces {
@@ -77,6 +79,9 @@ impl LanguageServer for Backend {
             self.client.log_message(MessageType::ERROR, "no workspace configuration").await;
         }
         self.load_workspaces_docs().await;
+        self.client
+            .log_message(MessageType::INFO, format!("initialize() run in {:.2?}", now.elapsed()))
+            .await;
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
@@ -109,11 +114,16 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        let now = Instant::now();
         self.docs
             .insert(params.text_document.uri.to_owned(), Document::new(&params.text_document.text));
+        self.client
+            .log_message(MessageType::INFO, format!("did_open run in {:.2?}", now.elapsed()))
+            .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let now = Instant::now();
         let uri = params.text_document.uri;
         for change in params.content_changes {
             let mut updated = false;
@@ -127,6 +137,9 @@ impl LanguageServer for Backend {
                 self.docs.insert(uri.to_owned(), Document::new(&change.text));
             }
         }
+        self.client
+            .log_message(MessageType::INFO, format!("did_change() run in {:.2?}", now.elapsed()))
+            .await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
@@ -134,17 +147,35 @@ impl LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        crate::commands::hover::hover(self, params)
+        let now = Instant::now();
+        let res = crate::commands::hover::hover(self, params);
+        self.client
+            .log_message(MessageType::INFO, format!("hover() run in {:.2?}", now.elapsed()))
+            .await;
+        res
     }
 
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        crate::commands::go_to_definition::goto_definition(self, params)
+        let now = Instant::now();
+        let res = crate::commands::go_to_definition::goto_definition(self, params);
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("goto_definition() run in {:.2?}", now.elapsed()),
+            )
+            .await;
+        res
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
-        crate::commands::references::references(self, params)
+        let now = Instant::now();
+        let res = crate::commands::references::references(self, params);
+        self.client
+            .log_message(MessageType::INFO, format!("references() run in {:.2?}", now.elapsed()))
+            .await;
+        res
     }
 }
