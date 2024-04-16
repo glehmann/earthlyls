@@ -16,12 +16,12 @@ pub fn goto_definition(
 ) -> Result<Option<GotoDefinitionResponse>> {
     let pos = &params.text_document_position_params.position;
     let uri = &params.text_document_position_params.text_document.uri;
-    let doc = &backend.docs.get(&uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
+    let doc = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
     let root_node = doc.tree.root_node();
     let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
     let mut cursor = root_node.walk();
     let mut target_node: Option<Node> = None;
-    while let Some(_) = cursor.goto_first_child_for_point(pos) {
+    while cursor.goto_first_child_for_point(pos).is_some() {
         if ["target_ref", "function_ref"].contains(&cursor.node().grammar_name()) {
             target_node = Some(cursor.node());
             break;

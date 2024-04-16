@@ -3,6 +3,8 @@ use std::{path::PathBuf, result};
 
 use thiserror::Error;
 
+use crate::util::request_failed;
+
 #[derive(Error, Debug)]
 pub enum EarthlylsError {
     #[error("{glob}: {source}")]
@@ -20,9 +22,9 @@ pub enum EarthlylsError {
     PathToUrl { path: PathBuf },
 }
 
-impl Into<tower_lsp::jsonrpc::Error> for EarthlylsError {
-    fn into(self) -> tower_lsp::jsonrpc::Error {
-        tower_lsp::jsonrpc::Error::invalid_request()
+impl From<EarthlylsError> for tower_lsp::jsonrpc::Error {
+    fn from(val: EarthlylsError) -> Self {
+        request_failed(&val.to_string())
     }
 }
 

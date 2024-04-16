@@ -9,12 +9,14 @@ pub struct Document {
     pub tree: Tree,
 }
 
-impl Document {
-    pub fn new() -> Self {
+impl Default for Document {
+    fn default() -> Self {
         Document { rope: Rope::new(), tree: crate::parser::parse("", None) }
     }
+}
 
-    pub fn from_str(text: &str) -> Self {
+impl Document {
+    pub fn new(text: &str) -> Self {
         Document { rope: Rope::from_str(text), tree: crate::parser::parse(text, None) }
     }
 
@@ -69,14 +71,14 @@ impl Document {
             old_end_position: Point::new(range.end.line as usize, range.end.character as usize),
             new_end_position: Point::new(end_pos_line, end_pos_character),
         }));
-        self.tree = crate::parser::parse_rope(&mut self.rope, Some(&self.tree));
+        self.tree = crate::parser::parse_rope(&self.rope, Some(&self.tree));
         dbg!(&self.tree);
     }
 
-    pub fn captures<'doc>(self: &'doc Self, query: &Query) -> Vec<Node<'doc>> {
+    pub fn captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
         let mut query_cursor = QueryCursor::new();
         let captures =
-            query_cursor.captures(&query, self.tree.root_node(), RopeProvider(self.rope.slice(..)));
+            query_cursor.captures(query, self.tree.root_node(), RopeProvider(self.rope.slice(..)));
         let mut res: Vec<Node<'doc>> = Vec::new();
         for (m, _) in captures {
             for c in m.captures {
@@ -103,7 +105,7 @@ mod tests {
 
     #[test]
     fn should_create_empty() {
-        let doc = Document::new();
+        let doc = Document::default();
         assert_eq!(doc.rope, "");
         assert_eq!(doc.rope.len_lines() - 1, 0);
         assert_eq!(doc.tree.root_node().to_string(), "(source_file)");
@@ -112,7 +114,7 @@ mod tests {
     #[test]
     fn should_create_from_str() {
         let text = format!("{SHORT_EARTHFILE}{FROM_ALPINE}");
-        let doc = Document::from_str(&text);
+        let doc = Document::new(&text);
         assert_eq!(doc.rope, text[..]);
         assert_eq!(doc.rope.len_lines() - 1, 2);
         assert_eq!(doc.tree.root_node().to_string(), EARTHFILE_TREE);
@@ -121,7 +123,7 @@ mod tests {
     #[test]
     fn should_update_at_eof() {
         let text = format!("{SHORT_EARTHFILE}{FROM_ALPINE}");
-        let mut doc = Document::from_str(SHORT_EARTHFILE);
+        let mut doc = Document::new(SHORT_EARTHFILE);
         doc.update(
             Range {
                 start: Position { line: 1, character: 0 },

@@ -6,15 +6,15 @@ use crate::{backend::Backend, descriptions::command_description, util::request_f
 pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
     let pos = &params.text_document_position_params.position;
     let uri = &params.text_document_position_params.text_document.uri;
-    let tree = &backend.docs.get(&uri).ok_or_else(|| request_failed("unknown document"))?.tree;
+    let tree = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document"))?.tree;
     let root_node = tree.root_node();
     let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
     // search a description to show to the user
     let mut cursor = root_node.walk();
     let mut description = None;
-    while let Some(_) = cursor.goto_first_child_for_point(pos) {
+    while cursor.goto_first_child_for_point(pos).is_some() {
         let name = cursor.node().grammar_name();
-        if let Some(d) = command_description(&name) {
+        if let Some(d) = command_description(name) {
             description = Some(d);
         }
     }

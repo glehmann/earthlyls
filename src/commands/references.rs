@@ -33,16 +33,13 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
         );
         for m in matches {
             // extract the target name from the capture
-            let Some(name_capture) =
-                m.captures.iter().filter(|c| c.index == target_name_idx).nth(0)
-            else {
+            let Some(name_capture) = m.captures.iter().find(|c| c.index == target_name_idx) else {
                 continue;
             };
             let ref_name = other_doc.node_content(name_capture.node);
 
             // extract the earthfile uri
-            let earthfile_capture =
-                m.captures.iter().filter(|c| c.index == target_earthfile_idx).nth(0);
+            let earthfile_capture = m.captures.iter().find(|c| c.index == target_earthfile_idx);
             let ref_uri = if let Some(earthfile_capture) = earthfile_capture {
                 let earthfile = other_doc.node_content(earthfile_capture.node);
                 let path = PathBuf::from_str(other_uri.path())
@@ -57,13 +54,12 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
                 other_uri.to_owned()
             };
             if ref_uri == target_uri && ref_name == target_name {
-                let range = if let Some(ref_capture) =
-                    m.captures.iter().filter(|c| c.index == ref_idx).nth(0)
-                {
-                    ref_capture.node.range()
-                } else {
-                    name_capture.node.range()
-                };
+                let range =
+                    if let Some(ref_capture) = m.captures.iter().find(|c| c.index == ref_idx) {
+                        ref_capture.node.range()
+                    } else {
+                        name_capture.node.range()
+                    };
 
                 res.push(Location { uri: other_uri.to_owned(), range: range.to_lsp_range() });
             }
@@ -76,7 +72,7 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     let pos = &params.text_document_position.position;
     let uri = &params.text_document_position.text_document.uri;
     // let include_declaration = &params.context.include_declaration;
-    let doc = &backend.docs.get(&uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
+    let doc = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
     let pos = Point { row: pos.line as usize, column: pos.character as usize };
 
     // some query stuff
@@ -92,8 +88,8 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     let Some(m) = matches.find(|m| {
         let node = m
             .nodes_for_capture_index(ref_idx)
-            .nth(0)
-            .or_else(|| m.nodes_for_capture_index(target_name_idx).nth(0))
+            .next()
+            .or_else(|| m.nodes_for_capture_index(target_name_idx).next())
             .unwrap();
         node.start_position() <= pos && pos < node.end_position()
     }) else {
@@ -101,13 +97,13 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     };
 
     // extract the target name from the capture
-    let Some(name_capture) = m.captures.iter().filter(|c| c.index == target_name_idx).nth(0) else {
+    let Some(name_capture) = m.captures.iter().find(|c| c.index == target_name_idx) else {
         return Ok(None);
     };
     let target_name = doc.node_content(name_capture.node);
 
     // extract the earthfile uri
-    let earthfile_capture = m.captures.iter().filter(|c| c.index == target_earthfile_idx).nth(0);
+    let earthfile_capture = m.captures.iter().find(|c| c.index == target_earthfile_idx);
     let target_uri = if let Some(earthfile_capture) = earthfile_capture {
         let earthfile = doc.node_content(earthfile_capture.node);
         let path = PathBuf::from_str(uri.path())

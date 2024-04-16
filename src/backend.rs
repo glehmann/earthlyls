@@ -47,7 +47,7 @@ impl Backend {
             self.docs.insert(
                 Url::from_file_path(&path)
                     .map_err(|_| error::EarthlylsError::PathToUrl { path: path.to_owned() })?,
-                Document::from_str(&std::fs::read_to_string(&path).path_ctx(path)?),
+                Document::new(&std::fs::read_to_string(&path).path_ctx(path)?),
             );
         }
         Ok(())
@@ -109,10 +109,8 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.docs.insert(
-            params.text_document.uri.to_owned(),
-            Document::from_str(&params.text_document.text),
-        );
+        self.docs
+            .insert(params.text_document.uri.to_owned(), Document::new(&params.text_document.text));
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -126,7 +124,7 @@ impl LanguageServer for Backend {
                 }
             }
             if !updated {
-                self.docs.insert(uri.to_owned(), Document::from_str(&change.text));
+                self.docs.insert(uri.to_owned(), Document::new(&change.text));
             }
         }
     }
