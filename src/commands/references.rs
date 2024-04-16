@@ -1,12 +1,11 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr, sync::OnceLock};
 
 use clean_path::Clean;
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
-use tree_sitter::{Point, QueryCursor};
+use tree_sitter::{Point, Query, QueryCursor};
 
 use crate::{
     backend::Backend,
-    queries,
     util::{request_failed, RopeProvider, ToLSPRange},
 };
 
@@ -16,7 +15,7 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
     };
 
     // some query stuff
-    let query = queries::target_or_function_ref();
+    let query = ref_query();
     let ref_idx = query.capture_index_for_name("ref").unwrap();
     let target_earthfile_idx = query.capture_index_for_name("target_earthfile").unwrap();
     let target_name_idx = query.capture_index_for_name("target_name").unwrap();
@@ -81,7 +80,7 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     let pos = Point { row: pos.line as usize, column: pos.character as usize };
 
     // some query stuff
-    let query = queries::target_or_function_ref();
+    let query = target_and_ref_query();
     let ref_idx = query.capture_index_for_name("ref").unwrap();
     let target_earthfile_idx = query.capture_index_for_name("target_earthfile").unwrap();
     let target_name_idx = query.capture_index_for_name("target_name").unwrap();
@@ -91,7 +90,11 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     let mut matches =
         query_cursor.matches(query, doc.tree.root_node(), RopeProvider(doc.rope.slice(..)));
     let Some(m) = matches.find(|m| {
-        let node = m.nodes_for_capture_index(ref_idx).nth(0).unwrap();
+        let node = m
+            .nodes_for_capture_index(ref_idx)
+            .nth(0)
+            .or_else(|| m.nodes_for_capture_index(target_name_idx).nth(0))
+            .unwrap();
         node.start_position() <= pos && pos < node.end_position()
     }) else {
         return Ok(None);
@@ -119,4 +122,39 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
         uri.to_owned()
     };
     Ok(Some((target_uri, target_name)))
+}
+
+pub fn target_and_ref_query() -> &'static Query {
+    static QUERY: OnceLock<Query> = OnceLock::new();
+    QUERY.get_or_init(|| {
+        Query::new(
+            &crate::parser::language(),
+            r"(target_ref
+                earthfile: (earthfile_ref)? @target_earthfile
+                name: (identifier) @target_name) @ref
+              (function_ref
+                earthfile: (earthfile_ref)? @target_earthfile
+                name: (identifier) @target_name) @ref
+              (target name: (identifier) @target_name)
+              ",
+        )
+        .unwrap()
+    })
+}
+
+pub fn ref_query() -> &'static Query {
+    static QUERY: OnceLock<Query> = OnceLock::new();
+    QUERY.get_or_init(|| {
+        Query::new(
+            &crate::parser::language(),
+            r"(target_ref
+                earthfile: (earthfile_ref)? @target_earthfile
+                name: (identifier) @target_name) @ref
+              (function_ref
+                earthfile: (earthfile_ref)? @target_earthfile
+                name: (identifier) @target_name) @ref
+              ",
+        )
+        .unwrap()
+    })
 }
