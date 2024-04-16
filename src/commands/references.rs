@@ -13,9 +13,10 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
     let Some((target_uri, target_name)) = get_target(backend, &params)? else {
         return Ok(None);
     };
+    let include_declaration = params.context.include_declaration;
 
     // some query stuff
-    let query = ref_query();
+    let query = if include_declaration { target_and_ref_query() } else { ref_query() };
     let ref_idx = query.capture_index_for_name("ref").unwrap();
     let target_earthfile_idx = query.capture_index_for_name("target_earthfile").unwrap();
     let target_name_idx = query.capture_index_for_name("target_name").unwrap();
@@ -71,7 +72,6 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
 fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url, String)>> {
     let pos = &params.text_document_position.position;
     let uri = &params.text_document_position.text_document.uri;
-    // let include_declaration = &params.context.include_declaration;
     let doc = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
     let pos = Point { row: pos.line as usize, column: pos.character as usize };
 
