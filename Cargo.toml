@@ -2,6 +2,15 @@
 name = "earthlyls"
 version = "0.1.0"
 edition = "2021"
+authors = ["Gaëtan Lehmann <gaetan.lehmann@gmail.com>"]
+description = "A fast language server for earthly"
+readme = "README.md"
+repository = "https://github.com/glehmann/earthlyls.git"
+homepage = "https://github.com/glehmann/earthlyls/"
+documentation = "https://github.com/glehmann/earthlyls/"
+license = "MIT"
+keywords = ["earthly", "lsp"]
+categories = ["development-tools"]
 
 [dependencies]
 clean-path = "0.2.1"
