@@ -1,3 +1,5 @@
+pub mod backend;
+pub mod commands;
 pub mod descriptions;
 pub mod document;
 pub mod error;
