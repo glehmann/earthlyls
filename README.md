@@ -2,6 +2,8 @@
 
 A fast language server for [earthly].
 
+![Screenshot of yage Earthfile in helix](screenshot.png)
+
 ## Installation
 
 ### From sources
