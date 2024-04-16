@@ -99,7 +99,7 @@ mod tests {
 
     const SHORT_EARTHFILE: &str = "VERSION 0.8\n";
     const FROM_ALPINE: &str = "FROM alpine\n";
-    const EARTHFILE_TREE: &str = "(source_file (version_command version: (version_major_minor)) (from_command (image_spec name: (image_name))))";
+    const EARTHFILE_TREE: &str = "(source_file (version_command version: (version_major_minor)) base_target: (block (from_command (image_spec name: (image_name)))))";
 
     #[test]
     fn should_create_empty() {
