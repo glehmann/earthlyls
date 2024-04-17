@@ -115,10 +115,12 @@ impl LanguageServer for Backend {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let now = Instant::now();
-        self.docs
-            .insert(params.text_document.uri.to_owned(), Document::new(&params.text_document.text));
+        self.docs.insert(
+            params.text_document.uri.to_owned(),
+            Document::open(&params.text_document.text),
+        );
         self.client
-            .log_message(MessageType::INFO, format!("did_open run in {:.2?}", now.elapsed()))
+            .log_message(MessageType::INFO, format!("did_open() run in {:.2?}", now.elapsed()))
             .await;
     }
 
@@ -134,7 +136,7 @@ impl LanguageServer for Backend {
                 }
             }
             if !updated {
-                self.docs.insert(uri.to_owned(), Document::new(&change.text));
+                self.docs.insert(uri.to_owned(), Document::open(&change.text));
             }
         }
         self.client
@@ -143,7 +145,9 @@ impl LanguageServer for Backend {
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.docs.remove(&params.text_document.uri);
+        if let Some(mut doc) = self.docs.get_mut(&params.text_document.uri) {
+            doc.is_open = false
+        };
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {

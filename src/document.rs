@@ -7,17 +7,28 @@ use crate::util::RopeProvider;
 pub struct Document {
     pub rope: Rope,
     pub tree: Tree,
+    pub is_open: bool,
 }
 
 impl Default for Document {
     fn default() -> Self {
-        Document { rope: Rope::new(), tree: crate::parser::parse("", None) }
+        Document { rope: Rope::new(), tree: crate::parser::parse("", None), is_open: false }
     }
 }
 
 impl Document {
     pub fn new(text: &str) -> Self {
-        Document { rope: Rope::from_str(text), tree: crate::parser::parse(text, None) }
+        Document {
+            rope: Rope::from_str(text),
+            tree: crate::parser::parse(text, None),
+            is_open: false,
+        }
+    }
+
+    pub fn open(text: &str) -> Self {
+        let mut doc = Self::new(text);
+        doc.is_open = true;
+        doc
     }
 
     pub fn update(&mut self, range: Range, text: &str) {
