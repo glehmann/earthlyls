@@ -1,0 +1,50 @@
+{
+	"name": "earthlyls",
+	"description": "VSCode extension for earthly",
+	"author": "Gaëtan Lehmann",
+	"license": "MIT",
+	"version": "0.1.2",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/glehmann/earthlyls"
+	},
+	"extensionDependencies": [
+		"earthly.earthfile-syntax-highlighting"
+	],
+	"publisher": "glehmann",
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"earthly",
+		"earthfile"
+	],
+	"engines": {
+		"vscode": "^1.75.0"
+	},
+	"activationEvents": [
+		"onLanguage:earthfile",
+		"workspaceContains:Earthfile"
+	],
+	"main": "./out/extension",
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"lint": "eslint ./src --ext .ts,.tsx"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.1"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^18.14.6",
+		"@types/vscode": "^1.75.1",
+		"@typescript-eslint/eslint-plugin": "^7.1.0",
+		"@typescript-eslint/parser": "^7.1.0",
+		"@vscode/test-electron": "^2.3.9",
+		"eslint": "^8.57.0",
+		"mocha": "^10.3.0",
+		"typescript": "^5.3.3"
+	}
+}
