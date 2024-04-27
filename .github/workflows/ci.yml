@@ -176,7 +176,7 @@ jobs:
       run: ${{ env.CARGO }} test --workspace ${{ env.TARGET_FLAGS }} --release
 
     - uses: actions/upload-artifact@v4
-      if: contains(["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"], matrix.target)
+      if: contains(fromJSON('["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]'), matrix.target)
       with:
         name: ${{ matrix.target }} binary
         path: "${{ env.TARGET_DIR }}/release/earthlyls*"
