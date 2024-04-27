@@ -1,6 +1,7 @@
 {
 	"name": "Earthly Language Server",
 	"description": "Earthly Language Server",
+	"icon": "logo.png",
 	"author": "Gaëtan Lehmann",
 	"license": "MIT",
 	"version": "0.1.2",
