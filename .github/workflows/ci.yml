@@ -179,7 +179,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }} binary
-        path: "${{ env.TARGET_DIR }}/earthlyls*"
+        path: "${{ env.TARGET_DIR }}/release/earthlyls*"
         retention-days: 1
 
   rustfmt:
