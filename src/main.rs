@@ -1,8 +1,11 @@
-use earthlyls::backend::Backend;
+use clap::Parser;
+use earthlyls::{backend::Backend, cli};
 use tower_lsp::{LspService, Server};
 
 #[tokio::main]
 async fn main() {
+    cli::Cli::parse();
+
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
