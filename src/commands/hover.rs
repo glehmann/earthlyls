@@ -19,7 +19,7 @@ pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
         };
         if node.is_named()
             || node.is_extra()
-            || !node.grammar_name().chars().all(|c| c.is_uppercase() || c.is_whitespace())
+            || !node.grammar_name().chars().all(|c| c.is_uppercase() || c == ' ')
         {
             continue;
         }
