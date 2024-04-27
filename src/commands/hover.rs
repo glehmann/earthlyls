@@ -16,12 +16,15 @@ pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
     while cursor.goto_first_child_for_point(pos).is_some() {
         let name = cursor.node().grammar_name();
         node = Some(cursor.node());
+        if name == "shell_fragment" {
+            break;
+        }
         if let Some(d) = command_description(name) {
             description = Some(d);
         }
     }
     if let Some(node) = node {
-        if node.is_named() || node.is_extra() {
+        if node.is_named() || node.is_extra() || node.is_named() {
             description = None;
         }
     }
