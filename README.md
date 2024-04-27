@@ -30,6 +30,13 @@ cargo install --path .
 
 ## Text editor configuration
 
+### neovim
+
+`neovim` has a ready to use configuration for `earthlyls` in [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig).
+
+`earthlyls` can either be installed manually or with [mason.nvim](https://github.com/williamboman/mason.nvim), which
+is configured to download the binary for your platform from [earthlyls’ releases](https://github.com/glehmann/earthlyls/releases).
+
 ### helix
 
 Helix from the `main` branch comes preconfigured with earthlyls support. Just enjoy!
