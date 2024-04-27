@@ -175,6 +175,13 @@ jobs:
     - name: Run tests
       run: ${{ env.CARGO }} test --workspace ${{ env.TARGET_FLAGS }} --release
 
+    - if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.target }} binary
+        path: "${{ env.TARGET_DIR }}/earthlyls*"
+        retention-days: 1
+
   rustfmt:
     runs-on: ubuntu-latest
     steps:
