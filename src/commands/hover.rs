@@ -12,20 +12,19 @@ pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
     // search a description to show to the user
     let mut cursor = root_node.walk();
     let mut description = None;
-    let mut node = None;
     while cursor.goto_first_child_for_point(pos).is_some() {
-        let name = cursor.node().grammar_name();
-        node = Some(cursor.node());
-        if name == "shell_fragment" {
-            break;
+        let node = cursor.node();
+        let Some(parent) = node.parent() else {
+            continue;
+        };
+        if node.is_named()
+            || node.is_extra()
+            || !node.grammar_name().chars().all(|c| c.is_uppercase() || c.is_whitespace())
+        {
+            continue;
         }
-        if let Some(d) = command_description(name) {
+        if let Some(d) = command_description(parent.grammar_name()) {
             description = Some(d);
-        }
-    }
-    if let Some(node) = node {
-        if node.is_named() || node.is_extra() || node.is_named() {
-            description = None;
         }
     }
     if let Some(description) = description {
