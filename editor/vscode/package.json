@@ -1,6 +1,6 @@
 {
-	"name": "earthlyls",
-	"description": "VSCode extension for earthly",
+	"name": "Earthly Language Server",
+	"description": "Earthly Language Server",
 	"author": "Gaëtan Lehmann",
 	"license": "MIT",
 	"version": "0.1.2",
