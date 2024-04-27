@@ -1,6 +1,7 @@
 {
-	"name": "Earthly Language Server",
-	"description": "Earthly Language Server",
+	"name": "earthlyls",
+	"displayName": "Earthly Language Server",
+	"description": "A fast language server for earthly",
 	"icon": "logo.png",
 	"author": "Gaëtan Lehmann",
 	"license": "MIT",
