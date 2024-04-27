@@ -34,6 +34,7 @@
 		"lint": "eslint ./src --ext .ts,.tsx"
 	},
 	"dependencies": {
+		"vsce": "^2.15.0",
 		"vscode-languageclient": "^9.0.1"
 	},
 	"devDependencies": {
