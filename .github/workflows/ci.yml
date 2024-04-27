@@ -176,7 +176,7 @@ jobs:
       run: ${{ env.CARGO }} test --workspace ${{ env.TARGET_FLAGS }} --release
 
     - if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }} binary
         path: "${{ env.TARGET_DIR }}/release/earthlyls*"
