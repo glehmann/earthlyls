@@ -205,6 +205,7 @@ jobs:
       - run: mv earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
       - run: |
           cd editor/vscode
+          chmod a+x server/*
           npm ci
           npx vsce package
       - uses: actions/upload-artifact@v4
