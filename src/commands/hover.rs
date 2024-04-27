@@ -12,10 +12,17 @@ pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
     // search a description to show to the user
     let mut cursor = root_node.walk();
     let mut description = None;
+    let mut node = None;
     while cursor.goto_first_child_for_point(pos).is_some() {
         let name = cursor.node().grammar_name();
+        node = Some(cursor.node());
         if let Some(d) = command_description(name) {
             description = Some(d);
+        }
+    }
+    if let Some(node) = node {
+        if node.is_named() || node.is_extra() {
+            description = None;
         }
     }
     if let Some(description) = description {
