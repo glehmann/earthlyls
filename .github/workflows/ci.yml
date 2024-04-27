@@ -178,7 +178,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: contains(fromJSON('["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]'), matrix.target)
       with:
-        name: ${{ matrix.target }} binary
+        name: ${{ matrix.target }}
         path: "${{ env.TARGET_DIR }}/release/earthlyls*"
         retention-days: 1
 
@@ -186,29 +186,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: aarch64-apple-darwin binary
-      - run: mv ./target/aarch64-apple-darwin/release/earthlyls ./editor/vscode/server/earthlyls-macos-arm64
+          name: aarch64-apple-darwin
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-macos-arm64
       - uses: actions/download-artifact@v4
         with:
-          name: x86_64-apple-darwin binary
-      - run: mv ./target/x86_64-apple-darwin/release/earthlyls ./editor/vscode/server/earthlyls-macos-amd64
+          name: x86_64-apple-darwin
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-macos-amd64
       - uses: actions/download-artifact@v4
         with:
-          name: x86_64-unknown-linux-musl binary
-      - run: mv ./target/x86_64-unknown-linux-musl/release/earthlyls ./editor/vscode/server/earthlyls-linux-amd64
+          name: x86_64-unknown-linux-musl
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-linux-amd64
       - uses: actions/download-artifact@v4
         with:
-          name: x86_64-pc-windows-msvc binary
-      - run: mv ./target/x86_64-pc-windows-msvc/release/earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
+          name: x86_64-pc-windows-msvc
+      - run: mv earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
       - run: |
           cd editor/vscode
           npm ci
           npx vsce package
       - uses: actions/upload-artifact@v4
         with:
-          name: vscode extension
+          name: vscode-extension
           path: "editor/vscode/*.vsix"
           retention-days: 7
           
