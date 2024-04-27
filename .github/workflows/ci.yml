@@ -175,13 +175,41 @@ jobs:
     - name: Run tests
       run: ${{ env.CARGO }} test --workspace ${{ env.TARGET_FLAGS }} --release
 
-    - if: always()
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }} binary
         path: "${{ env.TARGET_DIR }}/release/earthlyls*"
         retention-days: 1
 
+  vscode-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: aarch64-apple-darwin binary
+      - run: mv ./target/aarch64-apple-darwin/release/earthlyls ./editor/vscode/server/earthlyls-macos-arm64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-apple-darwin binary
+      - run: mv ./target/x86_64-apple-darwin/release/earthlyls ./editor/vscode/server/earthlyls-macos-amd64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-unknown-linux-musl binary
+      - run: mv ./target/x86_64-unknown-linux-musl/release/earthlyls ./editor/vscode/server/earthlyls-linux-amd64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-pc-windows-msvc binary
+      - run: mv ./target/x86_64-pc-windows-msvc/release/earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
+      - run: |
+          cd editor/vscode
+          npm ci
+          npx vsce package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode extension
+          path: "editor/vscode/*.vsix"
+          retention-days: 7
+          
   rustfmt:
     runs-on: ubuntu-latest
     steps:
