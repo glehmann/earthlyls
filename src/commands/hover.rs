@@ -9,22 +9,33 @@ pub fn hover(backend: &Backend, params: HoverParams) -> Result<Option<Hover>> {
     let tree = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document"))?.tree;
     let root_node = tree.root_node();
     let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
-    // search a description to show to the user
     let mut cursor = root_node.walk();
     let mut description = None;
+    // we only want to display the command description when hovering on a command keyword, but:
+    // * the keywords are not nameds as such — they are unnamed nodes
+    // * the keyword may not be the one that starts the command (hovering should work on AS in the IMPORT command)
     while cursor.goto_first_child_for_point(pos).is_some() {
         let node = cursor.node();
-        let Some(parent) = node.parent() else {
-            continue;
-        };
+        // only keep unnamed nodes that looks like earthfile keywords
         if node.is_named()
             || node.is_extra()
             || !node.grammar_name().chars().all(|c| c.is_uppercase() || c == ' ')
         {
             continue;
         }
+        let Some(parent) = node.parent() else {
+            continue;
+        };
         if let Some(d) = command_description(parent.grammar_name()) {
             description = Some(d);
+        } else {
+            // we may be hovering a command keyword but for a tree branch that has errors, so we search the description
+            // based on the keyword and not the command node. We won’t be able to find the description when hovering
+            // the AS of IMPORT in that case though
+            let name = node.grammar_name().to_lowercase().replace(' ', "_") + "_command";
+            if let Some(d) = command_description(&name) {
+                description = Some(d);
+            }
         }
     }
     if let Some(description) = description {
