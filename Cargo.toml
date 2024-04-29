@@ -12,6 +12,9 @@ license = "MIT"
 keywords = ["earthly", "lsp"]
 categories = ["development-tools"]
 
+[workspace]
+members = ["xtask"]
+
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 clean-path = "0.2.1"

@@ -19,3 +19,6 @@ rustflags = [
   "-C", "target-feature=+crt-static",
   "-C", "link-self-contained=yes",
 ]
+
+[alias]
+xtask = "run --package xtask --"
