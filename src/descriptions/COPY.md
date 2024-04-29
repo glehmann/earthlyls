@@ -14,6 +14,38 @@ The command may take a couple of possible forms. In the *classical form*, `COPY`
 
 The parameter `<src-artifact>` is an [artifact reference](../guides/importing.md#artifact-reference) and is generally of the form `<target-ref>/<artifact-path>`, where `<target-ref>` is the reference to the target which needs to be built in order to yield the artifact and `<artifact-path>` is the path within the artifact environment of the target, where the file or directory is located. The `<artifact-path>` may also be a wildcard.
 
+{% hint style='info' %}
+##### Globbing
+A target reference in a <src-artifact> may also include a glob expression.
+This is useful in order to invoke multiple targets that may exist in different Earthfiles in the filesystem, in a single `COPY` command.
+For example, consider the following filesystem:
+```bash
+services
+├── Earthfile
+├── service1
+│    └── Earthfile
+├── service2
+│   ├── Earthfile
+├── service3
+│   ├── Earthfile
+```
+
+where a `+mocks` target is defined in services1/Earthfile, services2/Earthfile and services3/Earthfile.
+The command `COPY ./services/*+mocks .` is equivalent to:
+```Earthfile
+    COPY ./services/service1+mocks .
+    COPY ./services/service2+mocks .
+    COPY ./services/service3+mocks .
+```
+
+A glob match occurs when an Earthfile in the glob expression path exists, and the named target is defined in the Earthfile.
+At least one match must be found for the command to succeed.
+
+This feature has experimental status. To use it, it must be enabled via `VERSION --wildcard-copy 0.8`.
+(This is not to be confused with the usage of wildcards in the artifact name, which is fully supported, e.g. `COPY ./services/service1+mocks/* .`)
+
+{% endhint %}
+
 The `COPY` command does not mark any saved images or artifacts of the referenced target for output, nor does it mark any push commands of the referenced target for pushing. For that, please use [`BUILD`](#build).
 
 Multiple `COPY` commands issued one after the other will build the referenced targets in parallel, if the targets don't depend on each other. The resulting artifacts will then be copied sequentially in the order in which the `COPY` commands were issued.

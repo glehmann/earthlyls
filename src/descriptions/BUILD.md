@@ -17,6 +17,37 @@ In Earthly v0.6+, what is being output and pushed is determined either by the ma
 
 If you are referencing a target via some other command, such as `COPY` and you would like for the outputs or pushes to be included, you can issue an equivalent `BUILD` command in addition to the `COPY`. For example
 
+{% hint style='info' %}
+##### Globbing
+A <target-ref> may also include a glob expression.
+This is useful in order to invoke multiple targets that may exist in different Earthfiles in the filesystem, in a single `BUILD` command.
+For example, consider the following filesystem:
+```bash
+services
+├── Earthfile
+├── service1
+│    └── Earthfile
+├── service2
+│   ├── Earthfile
+├── service3
+│   ├── Earthfile
+```
+
+where a `+compile` target is defined in services1/Earthfile, services2/Earthfile and services3/Earthfile.
+The command `BUILD ./services/*+compile .` is equivalent to:
+```Earthfile
+    BUILD ./services/service1+compile
+    BUILD ./services/service2+compile
+    BUILD ./services/service3+compile
+```
+
+A glob match occurs when an Earthfile in the glob expression path exists, and the named target is defined in the Earthfile.
+At least one match must be found for the command to succeed.
+
+This feature has experimental status. To use it, it must be enabled via `VERSION --wildcard-builds 0.8`.
+
+{% endhint %}
+
 ```Dockerfile
 my-target:
     COPY --platform=linux/amd64 (+some-target/some-file.txt --FOO=bar) ./
@@ -72,7 +103,7 @@ build-all-platforms:
 
 For more information see the [multi-platform guide](../guides/multi-platform.md).
 
-##### `--auto-skip` (*coming soon*)
+##### `--auto-skip` (*beta*)
 
 Instructs Earthly to skip the build of the target if the target's dependencies have not changed from a previous successful build. For more information on how to use this feature, see the [auto-skip section of the caching in Earthfiles guide](../caching/caching-in-earthfiles.md#auto-skip).
 
