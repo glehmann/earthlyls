@@ -251,5 +251,6 @@ jobs:
         toolchain: stable
     - run: |
         set -ex
+        pipx install mdsplit
         cargo xtask generate-descriptions
         git status --porcelain
