@@ -1,5 +1,12 @@
+use std::{path::PathBuf, str::FromStr};
+
+use clean_path::Clean;
+use glob_match::glob_match;
 use ropey::RopeSlice;
-use tower_lsp::{jsonrpc::Error, lsp_types};
+use tower_lsp::{
+    jsonrpc::{Error, Result},
+    lsp_types::{self, Url},
+};
 use tree_sitter::{Node, TextProvider};
 
 /// Adapter to use a rope slice in tree-sitter queries
@@ -35,4 +42,14 @@ pub fn request_failed(msg: &str) -> Error {
         message: std::borrow::Cow::Owned(msg.to_owned()),
         data: None,
     }
+}
+
+pub fn is_earthfile_ref_match(origin: &Url, earthfile_ref: &str, target_uri: &Url) -> Result<bool> {
+    let path = PathBuf::from_str(origin.path())
+        .map_err(|_| request_failed("can't compute the earthfile path"))?;
+    let path = path
+        .parent()
+        .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
+    let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
+    Ok(glob_match(&path, target_uri.path()))
 }

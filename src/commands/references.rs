@@ -6,7 +6,7 @@ use tree_sitter::{Point, Query, QueryCursor};
 
 use crate::{
     backend::Backend,
-    util::{request_failed, RopeProvider, ToLSPRange},
+    util::{is_earthfile_ref_match, request_failed, RopeProvider, ToLSPRange},
 };
 
 pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
@@ -41,20 +41,14 @@ pub fn references(backend: &Backend, params: ReferenceParams) -> Result<Option<V
 
             // extract the earthfile uri
             let earthfile_capture = m.captures.iter().find(|c| c.index == target_earthfile_idx);
-            let ref_uri = if let Some(earthfile_capture) = earthfile_capture {
-                let earthfile = other_doc.node_content(earthfile_capture.node);
-                let path = PathBuf::from_str(other_uri.path())
-                    .map_err(|_| request_failed("can't compute the earthfile path"))?;
-                let path = path
-                    .parent()
-                    .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
-                let path = path.join(earthfile).join("Earthfile").clean();
-                Url::from_file_path(path)
-                    .map_err(|_| request_failed("can't convert the earthfile path to an url"))?
+            let earthfile_ref = if let Some(earthfile_capture) = earthfile_capture {
+                other_doc.node_content(earthfile_capture.node)
             } else {
-                other_uri.to_owned()
+                "./".to_owned()
             };
-            if ref_uri == target_uri && ref_name == target_name {
+            if is_earthfile_ref_match(other_uri, &earthfile_ref, &target_uri)?
+                && ref_name == target_name
+            {
                 let range =
                     if let Some(ref_capture) = m.captures.iter().find(|c| c.index == ref_idx) {
                         ref_capture.node.range()
