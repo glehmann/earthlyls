@@ -21,6 +21,8 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
+      - name: remove editor dir from the package
+        run: rm -rf editor
       - name: Publish to crates.io
         run: cargo publish
         env:
