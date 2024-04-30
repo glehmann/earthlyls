@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::time::Instant;
 
 use dashmap::DashMap;
+use tower_lsp::lsp_types::request::{GotoDeclarationParams, GotoDeclarationResponse};
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer};
 use tree_sitter::Parser;
 
@@ -85,6 +86,7 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
+                declaration_provider: Some(DeclarationCapability::Simple(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 references_provider: Some(OneOf::Left(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
@@ -169,6 +171,23 @@ impl LanguageServer for Backend {
             .log_message(
                 MessageType::INFO,
                 format!("goto_definition() run in {:.2?}", now.elapsed()),
+            )
+            .await;
+        res
+    }
+
+    async fn goto_declaration(
+        &self,
+        params: GotoDeclarationParams,
+    ) -> Result<Option<GotoDeclarationResponse>> {
+        let now = Instant::now();
+        // declaration params and reponse are type aliases on the corresponding definition types, so we can just use
+        // them as is with our goto_definition implementation
+        let res = crate::commands::go_to_definition::goto_definition(self, params);
+        self.client
+            .log_message(
+                MessageType::INFO,
+                format!("goto_declaration() run in {:.2?}", now.elapsed()),
             )
             .await;
         res
