@@ -1,8 +1,3 @@
-use std::{path::PathBuf, str::FromStr};
-
-use clean_path::Clean;
-// use glob_match::glob_match;
-use glob_match::glob_match;
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
 use tree_sitter::{Node, Point};
 
@@ -38,7 +33,7 @@ pub fn goto_definition(
     let target_uris = if let Some(earthfile_ref_node) = origin_node.child_by_field_name("earthfile")
     {
         let earthfile_ref = doc.node_content(earthfile_ref_node);
-        match_earthfile_ref(backend, uri, &earthfile_ref)?
+        backend.match_earthfile_ref(uri, &earthfile_ref)?
     } else {
         vec![uri.to_owned()]
     };
@@ -61,19 +56,4 @@ pub fn goto_definition(
         }
     }
     Ok(Some(GotoDefinitionResponse::Link(res)))
-}
-
-fn match_earthfile_ref(backend: &Backend, origin: &Url, earthfile_ref: &str) -> Result<Vec<Url>> {
-    let path = PathBuf::from_str(origin.path())
-        .map_err(|_| request_failed("can't compute the earthfile path"))?;
-    let path = path
-        .parent()
-        .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
-    let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
-    Ok(backend
-        .docs
-        .iter()
-        .map(|i| i.key().clone())
-        .flat_map(|uri| if glob_match(&path, uri.path()) { Some(uri) } else { None })
-        .collect())
 }

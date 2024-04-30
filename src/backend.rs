@@ -2,13 +2,16 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
 
+use clean_path::Clean;
 use dashmap::DashMap;
+use glob_match::glob_match;
 use tower_lsp::lsp_types::request::{GotoDeclarationParams, GotoDeclarationResponse};
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer};
 use tree_sitter::Parser;
 
 use crate::document::Document;
 use crate::error::{self, GlobResultExt, IOResultExt};
+use crate::util::request_failed;
 
 // #[derive(Debug)]
 pub struct Backend {
@@ -53,6 +56,21 @@ impl Backend {
             );
         }
         Ok(())
+    }
+
+    pub fn match_earthfile_ref(&self, origin: &Url, earthfile_ref: &str) -> Result<Vec<Url>> {
+        let path = PathBuf::from_str(origin.path())
+            .map_err(|_| request_failed("can't compute the earthfile path"))?;
+        let path = path
+            .parent()
+            .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
+        let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
+        Ok(self
+            .docs
+            .iter()
+            .map(|i| i.key().clone())
+            .flat_map(|uri| if glob_match(&path, uri.path()) { Some(uri) } else { None })
+            .collect())
     }
 }
 
