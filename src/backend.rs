@@ -184,7 +184,7 @@ impl LanguageServer for Backend {
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let now = Instant::now();
-        let res = crate::commands::go_to_definition::goto_definition(self, params);
+        let res = crate::commands::goto_definition::goto_definition(self, params);
         self.client
             .log_message(
                 MessageType::INFO,
@@ -201,7 +201,7 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         // declaration params and reponse are type aliases on the corresponding definition types, so we can just use
         // them as is with our goto_definition implementation
-        let res = crate::commands::go_to_definition::goto_definition(self, params);
+        let res = crate::commands::goto_definition::goto_definition(self, params);
         self.client
             .log_message(
                 MessageType::INFO,
