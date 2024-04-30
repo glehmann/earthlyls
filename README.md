@@ -38,6 +38,10 @@ cargo install --path .
 
 ## Text editor configuration
 
+### Visual Studio Code
+
+The `earthlyls` extension for Visual Studio Code is available in the [marketplace](https://marketplace.visualstudio.com/items?itemName=glehmann.earthlyls).
+
 ### neovim
 
 `neovim` has a ready to use configuration for `earthlyls` in [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig).
