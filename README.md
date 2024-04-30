@@ -4,6 +4,14 @@ A fast language server for [earthly].
 
 ![Screenshot of yage Earthfile in helix](screenshot.png)
 
+`earthlyls` supports the following LSP features:
+
+* hover
+* goto definition
+* goto declaration
+* references
+* incremental document update
+
 ## Installation
 
 ### From binary package

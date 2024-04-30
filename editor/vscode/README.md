@@ -2,6 +2,14 @@
 
 A fast language server for [earthly].
 
+`earthlyls` supports the following LSP features:
+
+* hover
+* goto definition
+* goto declaration
+* references
+* incremental document update
+
 ## Performance
 
 How fast?
