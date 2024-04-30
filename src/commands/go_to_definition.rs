@@ -20,20 +20,20 @@ pub fn goto_definition(
     let root_node = doc.tree.root_node();
     let pos = Point { row: pos.line as usize, column: 1 + pos.character as usize };
     let mut cursor = root_node.walk();
-    let mut target_node: Option<Node> = None;
+    let mut origin_node: Option<Node> = None;
     while cursor.goto_first_child_for_point(pos).is_some() {
         if ["target_ref", "function_ref"].contains(&cursor.node().grammar_name()) {
-            target_node = Some(cursor.node());
+            origin_node = Some(cursor.node());
             break;
         }
     }
-    let Some(target_node) = target_node else {
+    let Some(origin_node) = origin_node else {
         return Ok(None);
     };
-    let Some(name_node) = target_node.child_by_field_name("name") else {
+    let Some(name_node) = origin_node.child_by_field_name("name") else {
         return Ok(None);
     };
-    let target_uri = if let Some(earthfile_ref_node) = target_node.child_by_field_name("earthfile")
+    let target_uri = if let Some(earthfile_ref_node) = origin_node.child_by_field_name("earthfile")
     {
         let earthfile = doc.node_content(earthfile_ref_node);
         let path = PathBuf::from_str(uri.path())
@@ -54,10 +54,12 @@ pub fn goto_definition(
         .ok_or_else(|| request_failed(&format!("unknown document: {target_uri}")))?;
     for node in target_doc.captures(queries::target_name()) {
         if target_doc.node_content(node) == name {
-            return Ok(Some(GotoDefinitionResponse::Scalar(Location {
-                uri: target_uri.to_owned(),
-                range: node.range().to_lsp_range(),
-            })));
+            return Ok(Some(GotoDefinitionResponse::Link(vec![LocationLink {
+                origin_selection_range: Some(origin_node.range().to_lsp_range()),
+                target_uri: target_uri.to_owned(),
+                target_range: node.range().to_lsp_range(), // TODO: this should probably be a different range
+                target_selection_range: node.range().to_lsp_range(),
+            }])));
         }
     }
     Ok(None)
