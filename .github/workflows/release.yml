@@ -161,6 +161,13 @@ jobs:
         fi
         echo "BIN=$bin" >> $GITHUB_ENV
 
+    - uses: actions/upload-artifact@v4
+      if: contains(fromJSON('["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]'), matrix.target)
+      with:
+        name: ${{ matrix.target }}
+        path: "${{ env.TARGET_DIR }}/release/earthlyls*"
+        retention-days: 1
+
     - name: Determine archive name
       shell: bash
       run: |
@@ -199,3 +206,37 @@ jobs:
       run: |
         version="${{ needs.create-release.outputs.version }}"
         gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
+
+  vscode-extension:
+    runs-on: ubuntu-latest
+    needs: [build-release, create-release]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: aarch64-apple-darwin
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-macos-arm64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-apple-darwin
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-macos-amd64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-unknown-linux-musl
+      - run: mv earthlyls ./editor/vscode/server/earthlyls-linux-amd64
+      - uses: actions/download-artifact@v4
+        with:
+          name: x86_64-pc-windows-msvc
+      - run: mv earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
+      - run: |
+          cd editor/vscode
+          chmod a+x server/*
+          npm ci
+          npx vsce package
+          shasum -a 256 *.vsix > earthlyls-${{ needs.create-release.outputs.version }}.vsix.sha256
+      - name: Upload release archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release upload "${{ needs.create-release.outputs.version }}" editor/vscode/*.vsix*
