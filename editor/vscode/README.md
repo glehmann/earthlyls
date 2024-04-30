@@ -2,6 +2,8 @@
 
 A fast language server for [earthly].
 
+![Screenshot of yage Earthfile in Visual Studio Code](screenshot.png)
+
 `earthlyls` supports the following LSP features:
 
 * hover
