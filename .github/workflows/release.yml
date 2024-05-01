@@ -230,12 +230,15 @@ jobs:
         with:
           name: x86_64-pc-windows-msvc
       - run: mv earthlyls.exe ./editor/vscode/server/earthlyls-windows-amd64.exe
-      - run: |
+      - env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
           cd editor/vscode
           chmod a+x server/*
           npm ci
           npx vsce package
           shasum -a 256 *.vsix > earthlyls-${{ needs.create-release.outputs.version }}.vsix.sha256
+          npx vsce publish -i *.vsix
       - name: Upload release archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
