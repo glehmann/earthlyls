@@ -229,6 +229,7 @@ dependencies = [
  "glob",
  "glob-match",
  "ropey",
+ "serde_json",
  "thiserror",
  "tokio",
  "tower-lsp",
