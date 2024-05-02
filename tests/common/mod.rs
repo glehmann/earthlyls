@@ -61,7 +61,7 @@ impl AsyncWrite for AsyncOut {
     }
 }
 
-struct TestContext {
+pub struct TestContext {
     pub request_tx: UnboundedSender<String>,
     pub response_rx: UnboundedReceiver<String>,
     pub _server: tokio::task::JoinHandle<()>,
@@ -277,10 +277,4 @@ impl TestContext {
             Some(vec![WorkspaceFolder { name: "tmp".to_owned(), uri: workspace_url.clone() }]);
         self.request::<lsp_types::request::Initialize>(&initialize).await
     }
-}
-
-#[tokio::test]
-async fn test_basic() -> anyhow::Result<()> {
-    TestContext::new().await?.initialize(Path::new("/tmp")).await?;
-    Ok(())
 }
