@@ -1,0 +1,10 @@
+VERSION --wildcard-builds 0.8
+
+rust:
+  FROM rust:slim
+
+build:
+  FROM +rust
+
+docker:
+  BUILD ./*/+docker

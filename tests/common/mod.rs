@@ -1,9 +1,11 @@
 #![allow(deprecated)]
 
 use std::fmt::Debug;
+use std::fs;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use fs_extra::dir::CopyOptions;
 use temp_dir::TempDir;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -80,13 +82,14 @@ impl TestContext {
         let (service, socket) = LspService::build(Backend::new).finish();
         let server = tokio::spawn(Server::new(async_in, async_out, socket).serve(service));
 
-        Ok(Self {
-            request_tx,
-            response_rx,
-            _server: server,
-            request_id: 0,
-            workspace: TempDir::new().unwrap(),
-        })
+        // create a temporary workspace an init it with our test inputs
+        let workspace = TempDir::new().unwrap();
+        for item in fs::read_dir("tests/workspace").unwrap() {
+            fs_extra::copy_items(&[item.unwrap().path()], workspace.path(), &CopyOptions::new())
+                .unwrap();
+        }
+
+        Ok(Self { request_tx, response_rx, _server: server, request_id: 0, workspace })
     }
 
     pub async fn send(&mut self, request: &jsonrpc::Request) -> anyhow::Result<()> {
