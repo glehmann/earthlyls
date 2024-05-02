@@ -30,7 +30,7 @@ impl AsyncRead for AsyncIn {
         let rx = self.get_mut();
         match rx.0.poll_recv(cx) {
             Poll::Ready(Some(v)) => {
-                // tracing::debug!("read value: {:?}", v);
+                eprintln!("read value: {:?}", v);
                 buf.put_slice(v.as_bytes());
                 Poll::Ready(Ok(()))
             }
@@ -47,7 +47,7 @@ impl AsyncWrite for AsyncOut {
     ) -> Poll<std::io::Result<usize>> {
         let tx = self.get_mut();
         let value = String::from_utf8(buf.to_vec()).unwrap();
-        // tracing::debug!("write value: {value:?}");
+        eprintln!("write value: {value:?}");
         let _ = tx.0.send(value);
         Poll::Ready(Ok(buf.len()))
     }
@@ -99,7 +99,7 @@ impl TestContext {
 
             // skip log messages
             if payload.contains("window/logMessage") {
-                // tracing::debug!("log: {payload}");
+                eprintln!("log: {payload}");
                 continue;
             }
             let response = serde_json::from_str::<jsonrpc::Response>(payload)?;
