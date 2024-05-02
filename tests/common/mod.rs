@@ -1,10 +1,10 @@
 #![allow(deprecated)]
 
 use std::fmt::Debug;
-use std::path::Path;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use temp_dir::TempDir;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tower_lsp::lsp_types::{Url, WorkspaceFolder};
@@ -66,6 +66,7 @@ pub struct TestContext {
     pub response_rx: UnboundedReceiver<String>,
     pub _server: tokio::task::JoinHandle<()>,
     pub request_id: i64,
+    pub workspace: TempDir,
 }
 
 impl TestContext {
@@ -79,7 +80,13 @@ impl TestContext {
         let (service, socket) = LspService::build(Backend::new).finish();
         let server = tokio::spawn(Server::new(async_in, async_out, socket).serve(service));
 
-        Ok(Self { request_tx, response_rx, _server: server, request_id: 0 })
+        Ok(Self {
+            request_tx,
+            response_rx,
+            _server: server,
+            request_id: 0,
+            workspace: TempDir::new().unwrap(),
+        })
     }
 
     pub async fn send(&mut self, request: &jsonrpc::Request) -> anyhow::Result<()> {
@@ -123,7 +130,6 @@ impl TestContext {
 
     pub async fn initialize(
         &mut self,
-        workspace: &Path,
     ) -> anyhow::Result<<lsp_types::request::Initialize as Request>::Result> {
         // a real set of initialize param from helix. We just have to change the workspace configuration
         let initialize = r#"{
@@ -270,8 +276,8 @@ impl TestContext {
       }"#;
         let mut initialize: <lsp_types::request::Initialize as Request>::Params =
             serde_json::from_str(initialize).unwrap();
-        let workspace_url = Url::from_file_path(workspace).unwrap();
-        initialize.root_path = Some(workspace.to_string_lossy().to_string());
+        let workspace_url = Url::from_file_path(self.workspace.path()).unwrap();
+        initialize.root_path = Some(self.workspace.path().to_string_lossy().to_string());
         initialize.root_uri = Some(workspace_url.clone());
         initialize.workspace_folders =
             Some(vec![WorkspaceFolder { name: "tmp".to_owned(), uri: workspace_url.clone() }]);
