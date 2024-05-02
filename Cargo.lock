@@ -223,7 +223,6 @@ dependencies = [
 name = "earthlyls"
 version = "0.2.0"
 dependencies = [
- "anyhow",
  "clap",
  "clean-path",
  "dashmap",

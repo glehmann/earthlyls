@@ -72,7 +72,7 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub async fn new() -> anyhow::Result<Self> {
+    pub async fn new() -> Self {
         let (request_tx, rx) = mpsc::unbounded_channel::<String>();
         let (tx, response_rx) = mpsc::unbounded_channel::<String>();
 
@@ -89,21 +89,19 @@ impl TestContext {
                 .unwrap();
         }
 
-        Ok(Self { request_tx, response_rx, _server: server, request_id: 0, workspace })
+        Self { request_tx, response_rx, _server: server, request_id: 0, workspace }
     }
 
-    pub async fn send(&mut self, request: &jsonrpc::Request) -> anyhow::Result<()> {
-        self.request_tx.send(encode_message(None, &serde_json::to_string(request)?))?;
-        Ok(())
+    pub async fn send(&mut self, request: &jsonrpc::Request) {
+        self.request_tx
+            .send(encode_message(None, &serde_json::to_string(request).unwrap()))
+            .unwrap();
     }
 
-    pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(
-        &mut self,
-    ) -> anyhow::Result<R> {
+    pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
         // TODO split response for single messages
         loop {
-            let response =
-                self.response_rx.recv().await.ok_or_else(|| anyhow::anyhow!("empty response"))?;
+            let response = self.response_rx.recv().await.unwrap();
             // decode response
             let payload = response.split('\n').last().unwrap_or_default();
 
@@ -112,28 +110,26 @@ impl TestContext {
                 eprintln!("log: {payload}");
                 continue;
             }
-            let response = serde_json::from_str::<jsonrpc::Response>(payload)?;
+            let response = serde_json::from_str::<jsonrpc::Response>(payload).unwrap();
             let (_id, result) = response.into_parts();
-            return Ok(serde_json::from_value(result?)?);
+            return serde_json::from_value(result.unwrap()).unwrap();
         }
     }
 
-    pub async fn request<R: Request>(&mut self, params: &R::Params) -> anyhow::Result<R::Result>
+    pub async fn request<R: Request>(&mut self, params: &R::Params) -> R::Result
     where
         R::Result: Debug,
     {
         let request = jsonrpc::Request::build(R::METHOD)
             .id(self.request_id)
-            .params(serde_json::to_value(params)?)
+            .params(serde_json::to_value(params).unwrap())
             .finish();
         self.request_id += 1;
-        self.send(&request).await?;
+        self.send(&request).await;
         self.recv().await
     }
 
-    pub async fn initialize(
-        &mut self,
-    ) -> anyhow::Result<<lsp_types::request::Initialize as Request>::Result> {
+    pub async fn initialize(&mut self) -> <lsp_types::request::Initialize as Request>::Result {
         // a real set of initialize param from helix. We just have to change the workspace configuration
         let initialize = r#"{
         "capabilities": {
