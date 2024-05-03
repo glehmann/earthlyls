@@ -50,11 +50,10 @@ impl TestContext {
     }
 
     pub async fn send(&mut self, request: &jsonrpc::Request) {
-        eprintln!("sending: {request:?}");
-        self.request_tx
-            .write_all(encode_message(None, &serde_json::to_string(request).unwrap()).as_bytes())
-            .await
-            .unwrap();
+        let content = serde_json::to_string(request).unwrap();
+        eprintln!("");
+        eprintln!("sending: {content}");
+        self.request_tx.write_all(encode_message(None, &content).as_bytes()).await.unwrap();
     }
 
     pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
