@@ -1,86 +1,39 @@
 #![allow(deprecated)]
+#![allow(dead_code)]
 
+use core::panic;
 use std::fmt::Debug;
 use std::fs;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 use fs_extra::dir::CopyOptions;
 use temp_dir::TempDir;
-use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::io::{duplex, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, DuplexStream};
 use tower_lsp::lsp_types::{Url, WorkspaceFolder};
 use tower_lsp::{jsonrpc, lsp_types, lsp_types::request::Request, LspService, Server};
 
 use earthlyls::backend::Backend;
 
-pub struct AsyncIn(UnboundedReceiver<String>);
-pub struct AsyncOut(UnboundedSender<String>);
-
 fn encode_message(content_type: Option<&str>, message: &str) -> String {
     let content_type = content_type.map(|ty| format!("\r\nContent-Type: {ty}")).unwrap_or_default();
-
     format!("Content-Length: {}{}\r\n\r\n{}", message.len(), content_type, message)
 }
 
-impl AsyncRead for AsyncIn {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        let rx = self.get_mut();
-        match rx.0.poll_recv(cx) {
-            Poll::Ready(Some(v)) => {
-                eprintln!("read value: {:?}", v);
-                buf.put_slice(v.as_bytes());
-                Poll::Ready(Ok(()))
-            }
-            _ => Poll::Pending,
-        }
-    }
-}
-
-impl AsyncWrite for AsyncOut {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<std::io::Result<usize>> {
-        let tx = self.get_mut();
-        let value = String::from_utf8(buf.to_vec()).unwrap();
-        eprintln!("write value: {value:?}");
-        let _ = tx.0.send(value);
-        Poll::Ready(Ok(buf.len()))
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-}
-
 pub struct TestContext {
-    pub request_tx: UnboundedSender<String>,
-    pub response_rx: UnboundedReceiver<String>,
+    pub request_tx: DuplexStream,
+    pub response_rx: BufReader<DuplexStream>,
     pub _server: tokio::task::JoinHandle<()>,
     pub request_id: i64,
     pub workspace: TempDir,
 }
 
 impl TestContext {
-    pub async fn new() -> Self {
-        let (request_tx, rx) = mpsc::unbounded_channel::<String>();
-        let (tx, response_rx) = mpsc::unbounded_channel::<String>();
-
-        let async_in = AsyncIn(rx);
-        let async_out = AsyncOut(tx);
+    pub fn new() -> Self {
+        let (request_tx, req_server) = duplex(1024);
+        let (resp_server, response_rx) = duplex(1024);
+        let response_rx = BufReader::new(response_rx);
 
         let (service, socket) = LspService::build(Backend::new).finish();
-        let server = tokio::spawn(Server::new(async_in, async_out, socket).serve(service));
+        let server = tokio::spawn(Server::new(req_server, resp_server, socket).serve(service));
 
         // create a temporary workspace an init it with our test inputs
         let workspace = TempDir::new().unwrap();
@@ -92,31 +45,46 @@ impl TestContext {
         Self { request_tx, response_rx, _server: server, request_id: 0, workspace }
     }
 
+    pub fn doc_uri(&self, path: &str) -> Url {
+        Url::from_file_path(self.workspace.path().join(path)).unwrap()
+    }
+
     pub async fn send(&mut self, request: &jsonrpc::Request) {
+        eprintln!("sending: {request:?}");
         self.request_tx
-            .send(encode_message(None, &serde_json::to_string(request).unwrap()))
+            .write_all(encode_message(None, &serde_json::to_string(request).unwrap()).as_bytes())
+            .await
             .unwrap();
     }
 
     pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
-        // TODO split response for single messages
         loop {
-            let response = self.response_rx.recv().await.unwrap();
-            // decode response
-            let payload = response.split('\n').last().unwrap_or_default();
-
+            // first line is the content length header
+            let mut clh = String::new();
+            self.response_rx.read_line(&mut clh).await.unwrap();
+            if !clh.starts_with("Content-Length") {
+                panic!("missing content length header");
+            }
+            let length =
+                clh.trim_start_matches("Content-Length: ").trim().parse::<usize>().unwrap();
+            // next line is just a blank line
+            self.response_rx.read_line(&mut clh).await.unwrap();
+            // then the message, of the size given by the content length header
+            let mut content = vec![0; length];
+            self.response_rx.read_exact(&mut content).await.unwrap();
+            let content = String::from_utf8(content).unwrap();
+            eprintln!("received: {content}");
             // skip log messages
-            if payload.contains("window/logMessage") {
-                eprintln!("log: {payload}");
+            if content.contains("window/logMessage") {
                 continue;
             }
-            let response = serde_json::from_str::<jsonrpc::Response>(payload).unwrap();
+            let response = serde_json::from_str::<jsonrpc::Response>(&content).unwrap();
             let (_id, result) = response.into_parts();
             return serde_json::from_value(result.unwrap()).unwrap();
         }
     }
 
-    pub async fn request<R: Request>(&mut self, params: &R::Params) -> R::Result
+    pub async fn request<R: Request>(&mut self, params: R::Params) -> R::Result
     where
         R::Result: Debug,
     {
@@ -280,6 +248,6 @@ impl TestContext {
         initialize.root_uri = Some(workspace_url.clone());
         initialize.workspace_folders =
             Some(vec![WorkspaceFolder { name: "tmp".to_owned(), uri: workspace_url.clone() }]);
-        self.request::<lsp_types::request::Initialize>(&initialize).await
+        self.request::<lsp_types::request::Initialize>(initialize).await
     }
 }
