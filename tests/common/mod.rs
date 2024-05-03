@@ -52,8 +52,7 @@ impl TestContext {
 
     pub async fn send(&mut self, request: &jsonrpc::Request) {
         let content = serde_json::to_string(request).unwrap();
-        eprintln!("");
-        eprintln!("sending: {content}");
+        eprintln!("\nsending: {content}");
         self.request_tx.write_all(encode_message(None, &content).as_bytes()).await.unwrap();
     }
 
