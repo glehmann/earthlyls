@@ -4,6 +4,7 @@
 use core::panic;
 use std::fmt::Debug;
 use std::fs;
+use std::path::Path;
 
 use fs_extra::dir::CopyOptions;
 use temp_dir::TempDir;
@@ -37,7 +38,7 @@ impl TestContext {
 
         // create a temporary workspace an init it with our test inputs
         let workspace = TempDir::new().unwrap();
-        for item in fs::read_dir("tests/workspace").unwrap() {
+        for item in fs::read_dir(Path::new("tests").join("workspace")).unwrap() {
             eprintln!("copying {item:?}");
             fs_extra::copy_items(&[item.unwrap().path()], workspace.path(), &CopyOptions::new())
                 .unwrap();
