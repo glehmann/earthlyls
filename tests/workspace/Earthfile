@@ -5,6 +5,7 @@ rust:
 
 build:
   FROM +rust
+  SAVE ARTIFACT ./foo AS LOCAL ./foo
 
 docker:
   BUILD ./*/+docker
