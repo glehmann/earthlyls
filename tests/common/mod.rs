@@ -38,6 +38,7 @@ impl TestContext {
         // create a temporary workspace an init it with our test inputs
         let workspace = TempDir::new().unwrap();
         for item in fs::read_dir("tests/workspace").unwrap() {
+            eprintln!("copying {item:?}");
             fs_extra::copy_items(&[item.unwrap().path()], workspace.path(), &CopyOptions::new())
                 .unwrap();
         }
