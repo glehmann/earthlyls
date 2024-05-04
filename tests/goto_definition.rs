@@ -36,3 +36,22 @@ async fn should_goto_definition() {
     assert_eq!(origin_range.end.character, 15);
     // panic!("Don’t panic!");
 }
+#[tokio::test]
+async fn should_goto_multiple_definitions() {
+    let mut ctx = TestContext::new();
+    ctx.initialize().await;
+    let res = ctx
+        .request::<request::GotoDefinition>(GotoDefinitionParams {
+            partial_result_params: PartialResultParams { partial_result_token: None },
+            text_document_position_params: TextDocumentPositionParams {
+                position: Position { line: 10, character: 13 },
+                text_document: TextDocumentIdentifier { uri: ctx.doc_uri("Earthfile") },
+            },
+            work_done_progress_params: WorkDoneProgressParams { work_done_token: None },
+        })
+        .await
+        .unwrap();
+    let GotoDefinitionResponse::Link(definitions) = res else { panic!("not a link variant!") };
+    assert_eq!(definitions.len(), 2);
+    // panic!("Don’t panic!");
+}
