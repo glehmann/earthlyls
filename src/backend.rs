@@ -136,7 +136,7 @@ impl LanguageServer for Backend {
             },
             server_info: Some(ServerInfo {
                 name: String::from("earthlyls"),
-                version: Some(String::from("0.2.0")),
+                version: Some(String::from("0.2.1")),
             }),
         })
     }
