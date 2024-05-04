@@ -1,5 +1,3 @@
-use std::{path::PathBuf, str::FromStr};
-
 use clean_path::Clean;
 use glob_match::glob_match;
 use ropey::RopeSlice;
@@ -45,11 +43,16 @@ pub fn request_failed(msg: &str) -> Error {
 }
 
 pub fn is_earthfile_ref_match(origin: &Url, earthfile_ref: &str, target_uri: &Url) -> Result<bool> {
-    let path = PathBuf::from_str(origin.path())
-        .map_err(|_| request_failed("can't compute the earthfile path"))?;
+    let path =
+        origin.to_file_path().map_err(|_| request_failed("can't compute the earthfile path"))?;
     let path = path
         .parent()
         .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
     let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
-    Ok(glob_match(&path, target_uri.path()))
+    let target_path = target_uri
+        .to_file_path()
+        .map_err(|_| request_failed("can't compute the earthfile path"))?
+        .to_string_lossy()
+        .to_string();
+    Ok(glob_match(&path, &target_path))
 }

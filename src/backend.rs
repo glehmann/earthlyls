@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::time::Instant;
 
 use clean_path::Clean;
@@ -46,8 +45,8 @@ impl Backend {
     }
 
     pub fn load_workspace_docs(&self, dir: &Path) -> error::Result<()> {
-        let glob_expr = &format!("{}/**/Earthfile", dir.to_string_lossy());
-        for f in glob::glob(glob_expr).glob_ctx(glob_expr)? {
+        let glob_expr = dir.join("**").join("Earthfile").to_string_lossy().to_string();
+        for f in glob::glob(&glob_expr).glob_ctx(&glob_expr)? {
             let path = f?;
             self.docs.insert(
                 Url::from_file_path(&path)
@@ -59,7 +58,8 @@ impl Backend {
     }
 
     pub fn match_earthfile_ref(&self, origin: &Url, earthfile_ref: &str) -> Result<Vec<Url>> {
-        let path = PathBuf::from_str(origin.path())
+        let path = origin
+            .to_file_path()
             .map_err(|_| request_failed("can't compute the earthfile path"))?;
         let path = path
             .parent()
@@ -69,7 +69,13 @@ impl Backend {
             .docs
             .iter()
             .map(|i| i.key().clone())
-            .flat_map(|uri| if glob_match(&path, uri.path()) { Some(uri) } else { None })
+            .flat_map(|uri| {
+                if glob_match(&path, &uri.to_file_path().unwrap().to_string_lossy()) {
+                    Some(uri)
+                } else {
+                    None
+                }
+            })
             .collect())
     }
 }
@@ -81,17 +87,28 @@ impl LanguageServer for Backend {
         // store the workspaces locations
         if let Some(workspaces) = params.workspace_folders {
             for workspace in workspaces {
-                if workspace.uri.scheme() == "file" {
-                    self.workspaces
-                        .insert(workspace.name, PathBuf::from_str(workspace.uri.path()).unwrap());
-                } else {
+                if workspace.uri.scheme() != "file" {
                     self.client
                         .log_message(MessageType::ERROR, "Unsupported workspace scheme")
                         .await;
                 }
+                if let Ok(path) = workspace.uri.to_file_path() {
+                    self.workspaces.insert(workspace.name, path);
+                } else {
+                    self.client
+                        .log_message(
+                            MessageType::ERROR,
+                            "Can't convert the workspace URI to file path",
+                        )
+                        .await;
+                }
             }
         } else if let Some(root) = params.root_uri {
-            self.workspaces.insert("default".into(), PathBuf::from_str(root.path()).unwrap());
+            self.workspaces.insert(
+                "default".into(),
+                root.to_file_path()
+                    .map_err(|_| request_failed("can't compute the earthfile path"))?,
+            );
         // } else if let Some(root) = params.root_path {
         //     self.workspaces.insert("default".into(), PathBuf::from_str(&root).unwrap());
         } else {

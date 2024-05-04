@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr, sync::OnceLock};
+use std::sync::OnceLock;
 
 use clean_path::Clean;
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
@@ -100,8 +100,8 @@ fn get_target(backend: &Backend, params: &ReferenceParams) -> Result<Option<(Url
     let earthfile_capture = m.captures.iter().find(|c| c.index == target_earthfile_idx);
     let target_uri = if let Some(earthfile_capture) = earthfile_capture {
         let earthfile = doc.node_content(earthfile_capture.node);
-        let path = PathBuf::from_str(uri.path())
-            .map_err(|_| request_failed("can't compute the earthfile path"))?;
+        let path =
+            uri.to_file_path().map_err(|_| request_failed("can't compute the earthfile path"))?;
         let path = path
             .parent()
             .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
