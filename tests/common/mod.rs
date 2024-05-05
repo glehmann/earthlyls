@@ -33,7 +33,8 @@ impl TestContext {
         let (resp_server, response_rx) = duplex(1024);
         let response_rx = BufReader::new(response_rx);
 
-        let (service, socket) = LspService::build(Backend::new).finish();
+        let (service, socket) =
+            LspService::build(|client| Backend::new(client, "0.1.0".into())).finish();
         let server = tokio::spawn(Server::new(req_server, resp_server, socket).serve(service));
 
         // create a temporary workspace an init it with our test inputs

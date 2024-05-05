@@ -15,17 +15,18 @@ use crate::util::request_failed;
 // #[derive(Debug)]
 pub struct Backend {
     pub client: Client,
+    pub version: String,
     pub docs: DashMap<Url, Document>,
     pub workspaces: DashMap<String, PathBuf>,
 }
 
 impl Backend {
-    pub fn new(client: Client) -> Self {
+    pub fn new(client: Client, version: String) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&tree_sitter_earthfile::language())
             .expect("Unable to load the earthfile language");
-        Backend { client, docs: Default::default(), workspaces: Default::default() }
+        Backend { client, version, docs: Default::default(), workspaces: Default::default() }
     }
 
     pub async fn load_workspaces_docs(&self) {
