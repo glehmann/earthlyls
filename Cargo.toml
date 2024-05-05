@@ -1,6 +1,6 @@
 [package]
 name = "earthlyls"
-version = "0.2.2"
+version.workspace = true
 edition = "2021"
 authors = ["Gaëtan Lehmann <gaetan.lehmann@gmail.com>"]
 description = "A fast language server for earthly"
@@ -14,6 +14,9 @@ categories = ["development-tools"]
 
 [workspace]
 members = ["xtask"]
+
+[workspace.package]
+version = "0.2.2"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
