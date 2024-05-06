@@ -60,7 +60,8 @@ fn release(args: &Release) -> anyhow::Result<()> {
     let version = &args.version;
     cmd!(sh, "npm version {version}").run()?;
     // commit, tag and push
-    cmd!(sh, "git commit -am 'bump version to {version}'").run()?;
+    let message = format!("bump version to {version}");
+    cmd!(sh, "git commit -am {message}").run()?;
     cmd!(sh, "git tag -am {version} {version}").run()?;
     cmd!(sh, "git push").run()?;
     cmd!(sh, "git push --tags").run()?;
