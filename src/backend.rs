@@ -4,6 +4,7 @@ use std::time::Instant;
 use clean_path::Clean;
 use dashmap::DashMap;
 use glob_match::glob_match;
+use path_slash::PathExt;
 use tower_lsp::lsp_types::request::{GotoDeclarationParams, GotoDeclarationResponse};
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer};
 use tree_sitter::Parser;
@@ -65,7 +66,7 @@ impl Backend {
         let path = path
             .parent()
             .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
-        let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
+        let path = path.join(earthfile_ref).join("Earthfile").clean().to_slash_lossy().to_string();
         Ok(self
             .docs
             .iter()
