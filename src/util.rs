@@ -1,5 +1,6 @@
 use clean_path::Clean;
 use glob_match::glob_match;
+use path_slash::PathBufExt;
 use ropey::RopeSlice;
 use tower_lsp::{
     jsonrpc::{Error, Result},
@@ -48,7 +49,7 @@ pub fn is_earthfile_ref_match(origin: &Url, earthfile_ref: &str, target_uri: &Ur
     let path = path
         .parent()
         .ok_or_else(|| request_failed("can't compute the current Earthfile parent"))?;
-    let path = path.join(earthfile_ref).join("Earthfile").clean().to_string_lossy().to_string();
+    let path = path.join(earthfile_ref).join("Earthfile").clean().to_slash_lossy().to_string();
     let target_path = target_uri
         .to_file_path()
         .map_err(|_| request_failed("can't compute the earthfile path"))?
