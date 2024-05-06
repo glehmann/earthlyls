@@ -77,3 +77,29 @@ async fn should_provide_references_without_declaration() {
     assert_eq!(r.uri, ctx.doc_uri("foo/Earthfile"));
     // panic!("Don’t panic!");
 }
+
+#[tokio::test]
+async fn should_provide_references_with_wildcard() {
+    let mut ctx = TestContext::new();
+    ctx.initialize().await;
+    let res = ctx
+        .request::<request::References>(ReferenceParams {
+            context: ReferenceContext { include_declaration: false },
+            partial_result_params: PartialResultParams { partial_result_token: None },
+            text_document_position: TextDocumentPositionParams {
+                position: Position { line: 2, character: 3 },
+                text_document: TextDocumentIdentifier { uri: ctx.doc_uri("bar/Earthfile") },
+            },
+            work_done_progress_params: WorkDoneProgressParams { work_done_token: None },
+        })
+        .await
+        .unwrap();
+    assert_eq!(res.len(), 1);
+    let r = &res[0];
+    assert_eq!(r.uri, ctx.doc_uri("Earthfile"));
+    assert_eq!(r.range.start.line, 10);
+    assert_eq!(r.range.start.character, 8);
+    assert_eq!(r.range.end.line, 10);
+    assert_eq!(r.range.end.character, 19);
+    // panic!("Don’t panic!");
+}
