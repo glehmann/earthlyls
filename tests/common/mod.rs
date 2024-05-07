@@ -9,6 +9,7 @@ use std::path::Path;
 use fs_extra::dir::CopyOptions;
 use temp_dir::TempDir;
 use tokio::io::{duplex, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, DuplexStream};
+use tower_lsp::lsp_types::notification::Notification;
 use tower_lsp::lsp_types::{Url, WorkspaceFolder};
 use tower_lsp::{jsonrpc, lsp_types, lsp_types::request::Request, LspService, Server};
 
@@ -96,6 +97,13 @@ impl TestContext {
         self.request_id += 1;
         self.send(&request).await;
         self.recv().await
+    }
+
+    pub async fn notify<N: Notification>(&mut self, params: N::Params) {
+        let notification = jsonrpc::Request::build(N::METHOD)
+            .params(serde_json::to_value(params).unwrap())
+            .finish();
+        self.send(&notification).await;
     }
 
     pub async fn initialize(&mut self) -> <lsp_types::request::Initialize as Request>::Result {
