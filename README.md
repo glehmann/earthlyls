@@ -12,30 +12,6 @@ A fast language server for [earthly].
 * references
 * incremental document update
 
-## Installation
-
-### From binary package
-
-Go to the [earthlyls release page](https://github.com/glehmann/earthlyls/releases), download the binary package for
-your OS, extract it and copy the `earthlyls` (`earthlyls.exe` on Windows) in a directory in your `PATH` — for example
-`~/.local/bin/`.
-
-### From source package
-
-Just run:
-
-~~~sh
-cargo install earthlyls
-~~~
-
-### From sources
-
-Clone the earthlyls repository and run:
-
-~~~sh
-cargo install --path .
-~~~
-
 ## Text editor configuration
 
 ### Visual Studio Code
@@ -51,7 +27,7 @@ is configured to download the binary for your platform from [earthlyls’ releas
 
 ### helix
 
-Helix from the `main` branch comes preconfigured with earthlyls support. Just enjoy!
+Helix from the `main` branch comes preconfigured with earthlyls support. Just [install it](INSTALL.md) and enjoy!
 
 For older versions, add this in your `languages.toml`:
 
@@ -77,6 +53,10 @@ source = { git = "https://github.com/glehmann/tree-sitter-earthfile", rev = "2a6
 ~~~
 
 Optionally run `hx --grammar build` to update your tree-sitter libraries and get the Earthfile syntax highlighting.
+
+## Installation
+
+See [INSTAll.md](INSTALL.md)
 
 ## Performance
 
