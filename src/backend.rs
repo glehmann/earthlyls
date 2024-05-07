@@ -138,6 +138,13 @@ impl LanguageServer for Backend {
                         ..Default::default()
                     },
                 )),
+                workspace: Some(WorkspaceServerCapabilities {
+                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                        supported: Some(true),
+                        change_notifications: Some(OneOf::Left(true)),
+                    }),
+                    file_operations: None,
+                }),
                 ..ServerCapabilities::default()
             },
             server_info: Some(ServerInfo {
@@ -189,6 +196,36 @@ impl LanguageServer for Backend {
         if let Some(mut doc) = self.docs.get_mut(&params.text_document.uri) {
             doc.is_open = false
         };
+    }
+
+    async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+        let now = Instant::now();
+        for event in params.changes {
+            match event.typ {
+                FileChangeType::CREATED | FileChangeType::CHANGED => {
+                    let Ok(path) = event.uri.to_file_path() else {
+                        self.error(format!("can't convert {} to file path", event.uri)).await;
+                        continue;
+                    };
+                    let content = match std::fs::read_to_string(&path) {
+                        Ok(content) => content,
+                        Err(e) => {
+                            self.error(format!("can't read document {}: {:?}", &event.uri, e))
+                                .await;
+                            continue;
+                        }
+                    };
+                    self.docs.insert(event.uri.to_owned(), Document::new(&content));
+                    self.info(format!("(re)loaded document {}", &event.uri)).await;
+                }
+                FileChangeType::DELETED => {
+                    self.docs.remove(&event.uri);
+                    self.info(format!("removed document {}", &event.uri)).await;
+                }
+                _ => self.warn(format!("unsupported file change type: {:?}", event.typ)).await,
+            }
+        }
+        self.info(format!("did_change_watched_files() run in {:.2?}", now.elapsed())).await;
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
