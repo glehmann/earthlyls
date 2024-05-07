@@ -59,10 +59,8 @@ impl Document {
         // update the rope
         // self.rope.remove(start..end);
         let end_rope = self.rope.split_off(end);
-        dbg!(&end_rope);
         self.rope.split_off(start); // just discard the modified part
         let edit_rope = Rope::from_str(text);
-        dbg!(&edit_rope);
 
         // new position to update the tree
         let end_pos_line = self.rope.len_lines() + edit_rope.len_lines() - 2;
@@ -71,19 +69,17 @@ impl Document {
         // merge the start, edited and end ropes
         self.rope.append(edit_rope);
         self.rope.append(end_rope);
-        dbg!(&self.rope);
 
         // update the tree-sitter tree
-        self.tree.edit(dbg!(&InputEdit {
+        self.tree.edit(&InputEdit {
             start_byte,
             old_end_byte,
             new_end_byte,
             start_position: Point::new(range.start.line as usize, range.start.character as usize),
             old_end_position: Point::new(range.end.line as usize, range.end.character as usize),
             new_end_position: Point::new(end_pos_line, end_pos_character),
-        }));
+        });
         self.tree = crate::parser::parse_rope(&self.rope, Some(&self.tree));
-        dbg!(&self.tree);
     }
 
     pub fn captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
