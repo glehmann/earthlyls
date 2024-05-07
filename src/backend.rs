@@ -80,6 +80,18 @@ impl Backend {
             })
             .collect())
     }
+
+    pub async fn error(&self, message: impl AsRef<str>) {
+        self.client.log_message(MessageType::ERROR, message.as_ref()).await
+    }
+
+    pub async fn warn(&self, message: impl AsRef<str>) {
+        self.client.log_message(MessageType::WARNING, message.as_ref()).await
+    }
+
+    pub async fn info(&self, message: impl AsRef<str>) {
+        self.client.log_message(MessageType::INFO, message.as_ref()).await
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -90,19 +102,13 @@ impl LanguageServer for Backend {
         if let Some(workspaces) = params.workspace_folders {
             for workspace in workspaces {
                 if workspace.uri.scheme() != "file" {
-                    self.client
-                        .log_message(MessageType::ERROR, "Unsupported workspace scheme")
-                        .await;
+                    self.error("Unsupported workspace scheme").await;
+                    continue;
                 }
                 if let Ok(path) = workspace.uri.to_file_path() {
                     self.workspaces.insert(workspace.name, path);
                 } else {
-                    self.client
-                        .log_message(
-                            MessageType::ERROR,
-                            "Can't convert the workspace URI to file path",
-                        )
-                        .await;
+                    self.error("Can't convert the workspace URI to file path").await;
                 }
             }
         } else if let Some(root) = params.root_uri {
@@ -114,12 +120,10 @@ impl LanguageServer for Backend {
         // } else if let Some(root) = params.root_path {
         //     self.workspaces.insert("default".into(), PathBuf::from_str(&root).unwrap());
         } else {
-            self.client.log_message(MessageType::ERROR, "no workspace configuration").await;
+            self.error("no workspace configuration").await;
         }
         self.load_workspaces_docs().await;
-        self.client
-            .log_message(MessageType::INFO, format!("initialize() run in {:.2?}", now.elapsed()))
-            .await;
+        self.info(format!("initialize() run in {:.2?}", now.elapsed())).await;
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
@@ -144,11 +148,11 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        self.client.log_message(MessageType::INFO, "earthlyls initialized!").await;
+        self.info("earthlyls initialized!").await;
     }
 
     async fn shutdown(&self) -> Result<()> {
-        self.client.log_message(MessageType::INFO, "earthlyls is shuting down!").await;
+        self.info("earthlyls is shuting down!").await;
         Ok(())
     }
 
@@ -158,9 +162,7 @@ impl LanguageServer for Backend {
             params.text_document.uri.to_owned(),
             Document::open(&params.text_document.text),
         );
-        self.client
-            .log_message(MessageType::INFO, format!("did_open() run in {:.2?}", now.elapsed()))
-            .await;
+        self.info(format!("did_open() run in {:.2?}", now.elapsed())).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -172,15 +174,15 @@ impl LanguageServer for Backend {
                 if let Some(mut doc) = self.docs.get_mut(&uri) {
                     doc.update(range, &change.text);
                     updated = true;
+                    self.info(format!("updated document {}", uri)).await;
                 }
             }
             if !updated {
                 self.docs.insert(uri.to_owned(), Document::open(&change.text));
+                self.info(format!("created document {}", uri)).await;
             }
         }
-        self.client
-            .log_message(MessageType::INFO, format!("did_change() run in {:.2?}", now.elapsed()))
-            .await;
+        self.info(format!("did_change() run in {:.2?}", now.elapsed())).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
@@ -192,9 +194,7 @@ impl LanguageServer for Backend {
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let now = Instant::now();
         let res = crate::commands::hover::hover(self, params);
-        self.client
-            .log_message(MessageType::INFO, format!("hover() run in {:.2?}", now.elapsed()))
-            .await;
+        self.info(format!("hover() run in {:.2?}", now.elapsed())).await;
         res
     }
 
@@ -204,12 +204,7 @@ impl LanguageServer for Backend {
     ) -> Result<Option<GotoDefinitionResponse>> {
         let now = Instant::now();
         let res = crate::commands::goto_definition::goto_definition(self, params);
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!("goto_definition() run in {:.2?}", now.elapsed()),
-            )
-            .await;
+        self.info(format!("goto_definition() run in {:.2?}", now.elapsed())).await;
         res
     }
 
@@ -221,21 +216,14 @@ impl LanguageServer for Backend {
         // declaration params and reponse are type aliases on the corresponding definition types, so we can just use
         // them as is with our goto_definition implementation
         let res = crate::commands::goto_definition::goto_definition(self, params);
-        self.client
-            .log_message(
-                MessageType::INFO,
-                format!("goto_declaration() run in {:.2?}", now.elapsed()),
-            )
-            .await;
+        self.info(format!("goto_declaration() run in {:.2?}", now.elapsed())).await;
         res
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         let now = Instant::now();
         let res = crate::commands::references::references(self, params);
-        self.client
-            .log_message(MessageType::INFO, format!("references() run in {:.2?}", now.elapsed()))
-            .await;
+        self.info(format!("references() run in {:.2?}", now.elapsed())).await;
         res
     }
 }
