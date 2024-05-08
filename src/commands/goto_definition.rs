@@ -1,9 +1,10 @@
+use std::sync::OnceLock;
+
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
-use tree_sitter::{Node, Point};
+use tree_sitter::{Node, Point, Query};
 
 use crate::{
     backend::Backend,
-    queries,
     util::{request_failed, ToLSPRange},
 };
 
@@ -44,7 +45,7 @@ pub fn goto_definition(
             .docs
             .get(&target_uri)
             .ok_or_else(|| request_failed(&format!("unknown document: {target_uri}")))?;
-        for node in target_doc.captures(queries::target_name()) {
+        for node in target_doc.captures(target_name()) {
             if target_doc.node_content(node) == name {
                 res.push(LocationLink {
                     origin_selection_range: Some(origin_node.range().to_lsp_range()),
@@ -56,4 +57,11 @@ pub fn goto_definition(
         }
     }
     Ok(Some(GotoDefinitionResponse::Link(res)))
+}
+
+fn target_name() -> &'static Query {
+    static QUERY: OnceLock<Query> = OnceLock::new();
+    QUERY.get_or_init(|| {
+        Query::new(&crate::parser::language(), r"(target name: (identifier) @target_name)").unwrap()
+    })
 }
