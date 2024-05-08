@@ -9,3 +9,6 @@ build:
 
 docker:
   BUILD ./*/+docker
+  ARG foo
+  ENV HOP=hop
+  SET v=1
