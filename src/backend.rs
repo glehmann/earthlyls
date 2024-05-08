@@ -130,6 +130,7 @@ impl LanguageServer for Backend {
                 declaration_provider: Some(DeclarationCapability::Simple(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 references_provider: Some(OneOf::Left(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         change: Some(TextDocumentSyncKind::INCREMENTAL),
@@ -261,6 +262,16 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         let res = crate::commands::references::references(self, params);
         self.info(format!("references() run in {:.2?}", now.elapsed())).await;
+        res
+    }
+
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let now = Instant::now();
+        let res = crate::commands::document_symbol::document_symbol(self, params);
+        self.info(format!("document_symbol() run in {:.2?}", now.elapsed())).await;
         res
     }
 }

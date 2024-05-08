@@ -10,7 +10,9 @@ A fast language server for [earthly].
 * goto definition
 * goto declaration
 * references
+* document symbol
 * incremental document update
+* watch file changes
 
 ## Performance
 
