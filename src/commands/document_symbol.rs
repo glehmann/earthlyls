@@ -16,7 +16,11 @@ pub fn document_symbol(
 ) -> Result<Option<DocumentSymbolResponse>> {
     let uri = &params.text_document.uri;
     let doc = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
+    let res = symbols(uri, doc);
+    Ok(Some(DocumentSymbolResponse::Flat(res)))
+}
 
+pub fn symbols(uri: &Url, doc: &Document) -> Vec<SymbolInformation> {
     // some query stuff
     let query = symbol_query();
     let symbol_idx = query.capture_index_for_name("symbol").unwrap();
@@ -49,7 +53,7 @@ pub fn document_symbol(
             },
         })
     }
-    Ok(Some(DocumentSymbolResponse::Flat(res)))
+    res
 }
 
 fn symbol_query() -> &'static Query {

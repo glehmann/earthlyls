@@ -128,9 +128,9 @@ impl LanguageServer for Backend {
             capabilities: ServerCapabilities {
                 definition_provider: Some(OneOf::Left(true)),
                 declaration_provider: Some(DeclarationCapability::Simple(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 references_provider: Some(OneOf::Left(true)),
-                document_symbol_provider: Some(OneOf::Left(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         change: Some(TextDocumentSyncKind::INCREMENTAL),
@@ -146,6 +146,7 @@ impl LanguageServer for Backend {
                     }),
                     file_operations: None,
                 }),
+                workspace_symbol_provider: Some(OneOf::Left(true)),
                 ..ServerCapabilities::default()
             },
             server_info: Some(ServerInfo {
@@ -272,6 +273,16 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         let res = crate::commands::document_symbol::document_symbol(self, params);
         self.info(format!("document_symbol() run in {:.2?}", now.elapsed())).await;
+        res
+    }
+
+    async fn symbol(
+        &self,
+        params: WorkspaceSymbolParams,
+    ) -> Result<Option<Vec<SymbolInformation>>> {
+        let now = Instant::now();
+        let res = crate::commands::symbol::symbol(self, params);
+        self.info(format!("symbol() run in {:.2?}", now.elapsed())).await;
         res
     }
 }

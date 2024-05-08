@@ -11,6 +11,7 @@ A fast language server for [earthly].
 * goto declaration
 * references
 * document symbol
+* workspace symbol
 * incremental document update
 * watch file changes
 
