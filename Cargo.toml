@@ -30,7 +30,7 @@ serde = "1.0.200"
 thiserror = "1.0.59"
 tokio = { version = "1.36.0", features = ["full"] }
 tower-lsp = "0.20.0"
-tree-sitter = "0.22.2"
+tree-sitter = "0.22.6"
 tree-sitter-earthfile = "0.4.0"
 
 [profile.release]
