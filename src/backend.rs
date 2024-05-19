@@ -171,6 +171,11 @@ impl LanguageServer for Backend {
             params.text_document.uri.to_owned(),
             Document::open(&params.text_document.text),
         );
+        if let Err(e) =
+            crate::diagnostic::publish_diagnostics(self, &params.text_document.uri).await
+        {
+            self.error(format!("error while publish diagnostics: {}", e)).await;
+        }
         self.info(format!("did_open() run in {:.2?}", now.elapsed())).await;
     }
 
@@ -190,6 +195,9 @@ impl LanguageServer for Backend {
                 self.docs.insert(uri.to_owned(), Document::open(&change.text));
                 self.info(format!("created document {}", uri)).await;
             }
+        }
+        if let Err(e) = crate::diagnostic::publish_diagnostics(self, &uri).await {
+            self.error(format!("error while publish diagnostics: {}", e)).await;
         }
         self.info(format!("did_change() run in {:.2?}", now.elapsed())).await;
     }
