@@ -4,13 +4,14 @@
 use core::panic;
 use std::fmt::Debug;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 
 use fs_extra::dir::CopyOptions;
 use temp_dir::TempDir;
 use tokio::io::{duplex, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, DuplexStream};
 use tower_lsp::lsp_types::notification::Notification;
-use tower_lsp::lsp_types::{Url, WorkspaceFolder};
+use tower_lsp::lsp_types::{InitializedParams, Url, WorkspaceFolder};
 use tower_lsp::{jsonrpc, lsp_types, lsp_types::request::Request, LspService, Server};
 
 use earthlyls::backend::Backend;
@@ -56,6 +57,7 @@ impl TestContext {
     pub async fn send(&mut self, request: &jsonrpc::Request) {
         let content = serde_json::to_string(request).unwrap();
         eprintln!("\nsending: {content}");
+        std::io::stderr().flush().unwrap();
         self.request_tx.write_all(encode_message(None, &content).as_bytes()).await.unwrap();
     }
 
@@ -76,6 +78,7 @@ impl TestContext {
             self.response_rx.read_exact(&mut content).await.unwrap();
             let content = String::from_utf8(content).unwrap();
             eprintln!("received: {content}");
+            std::io::stderr().flush().unwrap();
             // skip log messages
             if content.contains("window/logMessage") {
                 continue;
@@ -106,7 +109,7 @@ impl TestContext {
         self.send(&notification).await;
     }
 
-    pub async fn initialize(&mut self) -> <lsp_types::request::Initialize as Request>::Result {
+    pub async fn initialize(&mut self) {
         // a real set of initialize param from helix. We just have to change the workspace configuration
         let initialize = r#"{
         "capabilities": {
@@ -257,6 +260,7 @@ impl TestContext {
         initialize.root_uri = Some(workspace_url.clone());
         initialize.workspace_folders =
             Some(vec![WorkspaceFolder { name: "tmp".to_owned(), uri: workspace_url.clone() }]);
-        self.request::<lsp_types::request::Initialize>(initialize).await
+        self.request::<lsp_types::request::Initialize>(initialize).await;
+        self.notify::<lsp_types::notification::Initialized>(InitializedParams {}).await;
     }
 }

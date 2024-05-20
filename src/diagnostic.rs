@@ -16,3 +16,11 @@ pub async fn publish_diagnostics(backend: &Backend, uri: &Url) -> Result<()> {
     backend.client.publish_diagnostics(uri.to_owned(), diagnostics(backend, uri)?, None).await;
     Ok(())
 }
+
+pub async fn maybe_publish_diagnostics(backend: &Backend, uri: &Url) -> Result<()> {
+    let ds = diagnostics(backend, uri)?;
+    if !ds.is_empty() {
+        backend.client.publish_diagnostics(uri.to_owned(), ds, None).await;
+    }
+    Ok(())
+}

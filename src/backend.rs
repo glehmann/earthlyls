@@ -43,7 +43,11 @@ impl Backend {
                     .await;
             }
         }
-        dbg!(self.docs.len());
+        for item in self.docs.iter() {
+            if let Err(e) = crate::diagnostic::maybe_publish_diagnostics(self, item.key()).await {
+                self.error(format!("Can't publish diagnostic for {}: {}", item.key(), e)).await;
+            }
+        }
     }
 
     pub fn load_workspace_docs(&self, dir: &Path) -> error::Result<()> {
@@ -122,7 +126,6 @@ impl LanguageServer for Backend {
         } else {
             self.error("no workspace configuration").await;
         }
-        self.load_workspaces_docs().await;
         self.info(format!("initialize() run in {:.2?}", now.elapsed())).await;
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
@@ -157,7 +160,9 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        self.info("earthlyls initialized!").await;
+        let now = Instant::now();
+        self.load_workspaces_docs().await;
+        self.info(format!("initialized() run in {:.2?}", now.elapsed())).await;
     }
 
     async fn shutdown(&self) -> Result<()> {
