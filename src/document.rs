@@ -1,5 +1,5 @@
 use ropey::Rope;
-use tower_lsp::lsp_types::Range;
+use tower_lsp::lsp_types::{Diagnostic, Range};
 use tree_sitter::{InputEdit, Node, Point, Query, QueryCursor, Tree};
 
 use crate::util::RopeProvider;
@@ -8,11 +8,17 @@ pub struct Document {
     pub rope: Rope,
     pub tree: Tree,
     pub is_open: bool,
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 impl Default for Document {
     fn default() -> Self {
-        Document { rope: Rope::new(), tree: crate::parser::parse("", None), is_open: false }
+        Document {
+            rope: Rope::new(),
+            tree: crate::parser::parse("", None),
+            is_open: false,
+            diagnostics: Vec::new(),
+        }
     }
 }
 
@@ -22,6 +28,7 @@ impl Document {
             rope: Rope::from_str(text),
             tree: crate::parser::parse(text, None),
             is_open: false,
+            diagnostics: Vec::new(),
         }
     }
 
@@ -29,6 +36,11 @@ impl Document {
         let mut doc = Self::new(text);
         doc.is_open = true;
         doc
+    }
+
+    pub fn full_update(&mut self, text: &str) {
+        self.rope = Rope::from_str(text);
+        self.tree = crate::parser::parse(text, None);
     }
 
     pub fn update(&mut self, range: Range, text: &str) {

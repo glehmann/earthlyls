@@ -35,18 +35,11 @@ impl Backend {
             let dir = item.value();
             let name = item.key();
             if let Err(e) = self.load_workspace_docs(dir) {
-                self.client
-                    .log_message(
-                        MessageType::ERROR,
-                        format!("Can't load {name} workspace documents: {}", e),
-                    )
-                    .await;
+                self.error(format!("can't load {name} workspace documents: {}", e)).await;
             }
         }
-        for item in self.docs.iter() {
-            if let Err(e) = crate::diagnostic::maybe_publish_diagnostics(self, item.key()).await {
-                self.error(format!("Can't publish diagnostic for {}: {}", item.key(), e)).await;
-            }
+        if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
+            self.error(format!("can't publish diagnostic: {}", e)).await;
         }
     }
 
@@ -106,13 +99,13 @@ impl LanguageServer for Backend {
         if let Some(workspaces) = params.workspace_folders {
             for workspace in workspaces {
                 if workspace.uri.scheme() != "file" {
-                    self.error("Unsupported workspace scheme").await;
+                    self.error("unsupported workspace scheme").await;
                     continue;
                 }
                 if let Ok(path) = workspace.uri.to_file_path() {
                     self.workspaces.insert(workspace.name, path);
                 } else {
-                    self.error("Can't convert the workspace URI to file path").await;
+                    self.error("can't convert the workspace URI to file path").await;
                 }
             }
         } else if let Some(root) = params.root_uri {
@@ -176,10 +169,8 @@ impl LanguageServer for Backend {
             params.text_document.uri.to_owned(),
             Document::open(&params.text_document.text),
         );
-        if let Err(e) =
-            crate::diagnostic::publish_diagnostics(self, &params.text_document.uri).await
-        {
-            self.error(format!("error while publish diagnostics: {}", e)).await;
+        if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
+            self.error(format!("can't publish diagnostic: {}", e)).await;
         }
         self.info(format!("did_open() run in {:.2?}", now.elapsed())).await;
     }
@@ -201,8 +192,8 @@ impl LanguageServer for Backend {
                 self.info(format!("created document {}", uri)).await;
             }
         }
-        if let Err(e) = crate::diagnostic::publish_diagnostics(self, &uri).await {
-            self.error(format!("error while publish diagnostics: {}", e)).await;
+        if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
+            self.error(format!("can't publish diagnostic: {}", e)).await;
         }
         self.info(format!("did_change() run in {:.2?}", now.elapsed())).await;
     }
@@ -217,7 +208,7 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         for event in params.changes {
             match event.typ {
-                FileChangeType::CREATED | FileChangeType::CHANGED => {
+                FileChangeType::CREATED => {
                     let Ok(path) = event.uri.to_file_path() else {
                         self.error(format!("can't convert {} to file path", event.uri)).await;
                         continue;
@@ -231,6 +222,26 @@ impl LanguageServer for Backend {
                         }
                     };
                     self.docs.insert(event.uri.to_owned(), Document::new(&content));
+                    self.info(format!("loaded document {}", &event.uri)).await;
+                }
+                FileChangeType::CHANGED => {
+                    let Ok(path) = event.uri.to_file_path() else {
+                        self.error(format!("can't convert {} to file path", event.uri)).await;
+                        continue;
+                    };
+                    let content = match std::fs::read_to_string(&path) {
+                        Ok(content) => content,
+                        Err(e) => {
+                            self.error(format!("can't read document {}: {:?}", &event.uri, e))
+                                .await;
+                            continue;
+                        }
+                    };
+                    if let Some(mut doc) = self.docs.get_mut(&event.uri) {
+                        doc.full_update(&content);
+                    } else {
+                        self.docs.insert(event.uri.to_owned(), Document::new(&content));
+                    }
                     self.info(format!("(re)loaded document {}", &event.uri)).await;
                 }
                 FileChangeType::DELETED => {
@@ -239,6 +250,9 @@ impl LanguageServer for Backend {
                 }
                 _ => self.warn(format!("unsupported file change type: {:?}", event.typ)).await,
             }
+        }
+        if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
+            self.error(format!("can't publish diagnostics: {}", e)).await;
         }
         self.info(format!("did_change_watched_files() run in {:.2?}", now.elapsed())).await;
     }
