@@ -6,7 +6,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_provide_document_symbols() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::DocumentSymbolRequest>(DocumentSymbolParams {

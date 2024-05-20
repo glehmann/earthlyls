@@ -8,7 +8,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_goto_definition() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::GotoDefinition>(GotoDefinitionParams {
@@ -38,7 +38,7 @@ async fn should_goto_definition() {
 }
 #[tokio::test]
 async fn should_goto_multiple_definitions() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::GotoDefinition>(GotoDefinitionParams {

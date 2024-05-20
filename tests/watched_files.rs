@@ -9,7 +9,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_react_to_changed_notification() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
 
     // add a new target using +rust in ./Earthfile
@@ -48,7 +48,7 @@ new-target:
 
 #[tokio::test]
 async fn should_react_to_created_notification() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
 
     // add a new Earthfile using +rust from ./Earthfile
@@ -89,7 +89,7 @@ new-target:
 
 #[tokio::test]
 async fn should_react_to_deleted_notification() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
 
     std::fs::remove_file(ctx.doc_uri("bar/Earthfile").to_file_path().unwrap()).unwrap();

@@ -30,7 +30,7 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub fn new() -> Self {
+    pub fn new(base: &str) -> Self {
         let (request_tx, req_server) = duplex(1024);
         let (resp_server, response_rx) = duplex(1024);
         let response_rx = BufReader::new(response_rx);
@@ -41,7 +41,7 @@ impl TestContext {
 
         // create a temporary workspace an init it with our test inputs
         let workspace = TempDir::new().unwrap();
-        for item in fs::read_dir(Path::new("tests").join("workspace")).unwrap() {
+        for item in fs::read_dir(Path::new("tests").join("workspace").join(base)).unwrap() {
             eprintln!("copying {item:?}");
             fs_extra::copy_items(&[item.unwrap().path()], workspace.path(), &CopyOptions::new())
                 .unwrap();

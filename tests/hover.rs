@@ -8,7 +8,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_hover_with_keyword() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::HoverRequest>(HoverParams {
@@ -27,7 +27,7 @@ async fn should_hover_with_keyword() {
 
 #[tokio::test]
 async fn should_hover_with_non_command_keyword() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::HoverRequest>(HoverParams {
@@ -46,7 +46,7 @@ async fn should_hover_with_non_command_keyword() {
 
 #[tokio::test]
 async fn should_not_hover_outside_keyword() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::HoverRequest>(HoverParams {
@@ -62,7 +62,7 @@ async fn should_not_hover_outside_keyword() {
 
 #[tokio::test]
 async fn should_not_hover_on_eol() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::HoverRequest>(HoverParams {

@@ -6,7 +6,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_provide_workspace_symbols() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::WorkspaceSymbolRequest>(WorkspaceSymbolParams {
@@ -25,7 +25,7 @@ async fn should_provide_workspace_symbols() {
 
 #[tokio::test]
 async fn should_provide_workspace_symbols_with_query() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::WorkspaceSymbolRequest>(WorkspaceSymbolParams {

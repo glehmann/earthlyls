@@ -6,7 +6,7 @@ use crate::common::*;
 
 #[tokio::test]
 async fn should_provide_references() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let mut res = ctx
         .request::<request::References>(ReferenceParams {
@@ -51,7 +51,7 @@ async fn should_provide_references() {
 
 #[tokio::test]
 async fn should_provide_references_without_declaration() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let mut res = ctx
         .request::<request::References>(ReferenceParams {
@@ -80,7 +80,7 @@ async fn should_provide_references_without_declaration() {
 
 #[tokio::test]
 async fn should_provide_references_with_wildcard() {
-    let mut ctx = TestContext::new();
+    let mut ctx = TestContext::new("simple");
     ctx.initialize().await;
     let res = ctx
         .request::<request::References>(ReferenceParams {
