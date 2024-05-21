@@ -3,4 +3,4 @@ VERSION 0.8
 foo:
   RUN --broken-option pwd
   auie # broken command
-  RUN echo
+  RUN echo ${auie blah

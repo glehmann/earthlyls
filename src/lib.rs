@@ -1,4 +1,5 @@
 pub mod backend;
+pub mod bash_parser;
 pub mod cli;
 pub mod commands;
 pub mod descriptions;

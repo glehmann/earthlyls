@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use ropey::Rope;
 use tower_lsp::lsp_types::{Diagnostic, Range};
 use tree_sitter::{InputEdit, Node, Point, Query, QueryCursor, Tree};
@@ -7,6 +9,7 @@ use crate::util::RopeProvider;
 pub struct Document {
     pub rope: Rope,
     pub tree: Tree,
+    pub bash_tree: Tree,
     pub is_open: bool,
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -16,6 +19,7 @@ impl Default for Document {
         Document {
             rope: Rope::new(),
             tree: crate::parser::parse("", None),
+            bash_tree: crate::bash_parser::parse("", None, &[]),
             is_open: false,
             diagnostics: Vec::new(),
         }
@@ -24,12 +28,19 @@ impl Default for Document {
 
 impl Document {
     pub fn new(text: &str) -> Self {
-        Document {
+        // just start with an empty bash tree, then get the shell fragment ranges to use with the bash parser
+        // and set the actual bash tree
+        let mut doc = Document {
             rope: Rope::from_str(text),
             tree: crate::parser::parse(text, None),
+            bash_tree: crate::parser::parse("", None),
             is_open: false,
             diagnostics: Vec::new(),
-        }
+        };
+        let ranges: Vec<_> =
+            doc.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
+        doc.bash_tree = crate::bash_parser::parse(text, None, &ranges);
+        doc
     }
 
     pub fn open(text: &str) -> Self {
@@ -41,6 +52,9 @@ impl Document {
     pub fn full_update(&mut self, text: &str) {
         self.rope = Rope::from_str(text);
         self.tree = crate::parser::parse(text, None);
+        let ranges: Vec<_> =
+            self.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
+        self.bash_tree = crate::bash_parser::parse(text, None, &ranges);
     }
 
     pub fn update(&mut self, range: Range, text: &str) {
@@ -83,15 +97,20 @@ impl Document {
         self.rope.append(end_rope);
 
         // update the tree-sitter tree
-        self.tree.edit(&InputEdit {
+        let ie = InputEdit {
             start_byte,
             old_end_byte,
             new_end_byte,
             start_position: Point::new(range.start.line as usize, range.start.character as usize),
             old_end_position: Point::new(range.end.line as usize, range.end.character as usize),
             new_end_position: Point::new(end_pos_line, end_pos_character),
-        });
+        };
+        self.tree.edit(&ie);
         self.tree = crate::parser::parse_rope(&self.rope, Some(&self.tree));
+        let ranges: Vec<_> =
+            self.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
+        self.bash_tree.edit(&ie);
+        self.bash_tree = crate::bash_parser::parse_rope(&self.rope, Some(&self.tree), &ranges);
     }
 
     pub fn captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
@@ -107,9 +126,32 @@ impl Document {
         res
     }
 
+    pub fn bash_captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
+        let mut query_cursor = QueryCursor::new();
+        let captures = query_cursor.captures(
+            query,
+            self.bash_tree.root_node(),
+            RopeProvider(self.rope.slice(..)),
+        );
+        let mut res: Vec<Node<'doc>> = Vec::new();
+        for (m, _) in captures {
+            for c in m.captures {
+                res.push(c.node);
+            }
+        }
+        res
+    }
+
     pub fn node_content(&self, node: Node) -> String {
         self.rope.byte_slice(node.byte_range()).to_string()
     }
+}
+
+fn shell_fragment_query() -> &'static Query {
+    static QUERY: OnceLock<Query> = OnceLock::new();
+    QUERY.get_or_init(|| {
+        Query::new(&crate::parser::language(), r"(shell_fragment) @shell_fragment").unwrap()
+    })
 }
 
 #[cfg(test)]
