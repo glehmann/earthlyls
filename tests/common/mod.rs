@@ -61,7 +61,7 @@ impl TestContext {
         self.request_tx.write_all(encode_message(None, &content).as_bytes()).await.unwrap();
     }
 
-    pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
+    pub async fn response<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
         loop {
             // first line is the content length header
             let mut clh = String::new();
@@ -99,7 +99,35 @@ impl TestContext {
             .finish();
         self.request_id += 1;
         self.send(&request).await;
-        self.recv().await
+        self.response().await
+    }
+
+    pub async fn recv<R: std::fmt::Debug + serde::de::DeserializeOwned>(&mut self) -> R {
+        loop {
+            // first line is the content length header
+            let mut clh = String::new();
+            self.response_rx.read_line(&mut clh).await.unwrap();
+            if !clh.starts_with("Content-Length") {
+                panic!("missing content length header");
+            }
+            let length =
+                clh.trim_start_matches("Content-Length: ").trim().parse::<usize>().unwrap();
+            // next line is just a blank line
+            self.response_rx.read_line(&mut clh).await.unwrap();
+            // then the message, of the size given by the content length header
+            let mut content = vec![0; length];
+            self.response_rx.read_exact(&mut content).await.unwrap();
+            let content = String::from_utf8(content).unwrap();
+            eprintln!("received: {content}");
+            std::io::stderr().flush().unwrap();
+            // skip log messages
+            if content.contains("window/logMessage") {
+                continue;
+            }
+            let response = serde_json::from_str::<jsonrpc::Request>(&content).unwrap();
+            let (_method, _id, params) = response.into_parts();
+            return serde_json::from_value(params.unwrap()).unwrap();
+        }
     }
 
     pub async fn notify<N: Notification>(&mut self, params: N::Params) {
