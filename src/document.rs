@@ -9,7 +9,7 @@ use crate::util::RopeProvider;
 pub struct Document {
     pub rope: Rope,
     pub tree: Tree,
-    pub bash_tree: Tree,
+    pub bash_trees: Vec<Tree>,
     pub is_open: bool,
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -19,7 +19,7 @@ impl Default for Document {
         Document {
             rope: Rope::new(),
             tree: crate::parser::parse("", None),
-            bash_tree: crate::bash_parser::parse("", None, &[]),
+            bash_trees: Vec::new(),
             is_open: false,
             diagnostics: Vec::new(),
         }
@@ -33,13 +33,14 @@ impl Document {
         let mut doc = Document {
             rope: Rope::from_str(text),
             tree: crate::parser::parse(text, None),
-            bash_tree: crate::parser::parse("", None),
+            bash_trees: Vec::new(),
             is_open: false,
             diagnostics: Vec::new(),
         };
         let ranges: Vec<_> =
             doc.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
-        doc.bash_tree = crate::bash_parser::parse(text, None, &ranges);
+        doc.bash_trees =
+            ranges.iter().map(|range| crate::bash_parser::parse(text, None, &[*range])).collect();
         doc
     }
 
@@ -54,7 +55,8 @@ impl Document {
         self.tree = crate::parser::parse(text, None);
         let ranges: Vec<_> =
             self.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
-        self.bash_tree = crate::bash_parser::parse(text, None, &ranges);
+        self.bash_trees =
+            ranges.iter().map(|range| crate::bash_parser::parse(text, None, &[*range])).collect();
     }
 
     pub fn update(&mut self, range: Range, text: &str) {
@@ -109,8 +111,8 @@ impl Document {
         self.tree = crate::parser::parse_rope(&self.rope, Some(&self.tree));
         let ranges: Vec<_> =
             self.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
-        self.bash_tree.edit(&ie);
-        self.bash_tree = crate::bash_parser::parse_rope(&self.rope, Some(&self.tree), &ranges);
+        self.bash_trees =
+            ranges.iter().map(|range| crate::bash_parser::parse(text, None, &[*range])).collect();
     }
 
     pub fn captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
@@ -128,15 +130,14 @@ impl Document {
 
     pub fn bash_captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
         let mut query_cursor = QueryCursor::new();
-        let captures = query_cursor.captures(
-            query,
-            self.bash_tree.root_node(),
-            RopeProvider(self.rope.slice(..)),
-        );
         let mut res: Vec<Node<'doc>> = Vec::new();
-        for (m, _) in captures {
-            for c in m.captures {
-                res.push(c.node);
+        for tree in self.bash_trees.iter() {
+            let captures =
+                query_cursor.captures(query, tree.root_node(), RopeProvider(self.rope.slice(..)));
+            for (m, _) in captures {
+                for c in m.captures {
+                    res.push(c.node);
+                }
             }
         }
         res
