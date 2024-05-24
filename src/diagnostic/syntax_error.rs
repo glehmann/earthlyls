@@ -15,7 +15,7 @@ pub fn syntax_error(doc: &Document) -> Result<Vec<Diagnostic>> {
         })
         .chain(doc.bash_captures(syntax_error_query()).iter().map(|node| Diagnostic {
             range: node.range().to_lsp_range(),
-            message: "syntax error".to_string(),
+            message: "shell syntax error".to_string(),
             severity: Some(DiagnosticSeverity::ERROR),
             ..Default::default()
         }))

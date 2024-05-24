@@ -32,7 +32,7 @@ async fn should_publish_syntax_diagnostics() {
     assert_eq!(d.range.start.character, 11);
     assert_eq!(d.range.end.line, 5);
     assert_eq!(d.range.end.character, 17);
-    assert_eq!(d.message, "syntax error");
+    assert_eq!(d.message, "shell syntax error");
 
     // panic!("Don’t panic!");
 }
