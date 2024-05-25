@@ -111,8 +111,10 @@ impl Document {
         self.tree = crate::parser::parse_rope(&self.rope, Some(&self.tree));
         let ranges: Vec<_> =
             self.captures(shell_fragment_query()).iter().map(|node| node.range()).collect();
-        self.bash_trees =
-            ranges.iter().map(|range| crate::bash_parser::parse(text, None, &[*range])).collect();
+        self.bash_trees = ranges
+            .iter()
+            .map(|range| crate::bash_parser::parse_rope(&self.rope, None, &[*range]))
+            .collect();
     }
 
     pub fn captures<'doc>(&'doc self, query: &Query) -> Vec<Node<'doc>> {
