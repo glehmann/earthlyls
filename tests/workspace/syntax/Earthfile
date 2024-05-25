@@ -4,3 +4,4 @@ foo:
   RUN --broken-option pwd
   auie # broken command
   RUN echo ${auie blah
+  BUILD --build-arg foo=bar +bar
