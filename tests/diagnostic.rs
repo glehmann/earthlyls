@@ -22,7 +22,7 @@ async fn should_publish_syntax_diagnostics() {
 
     let d = &ds[1];
     assert_eq!(d.range.start.line, 3);
-    assert_eq!(d.range.start.character, 5);
+    assert_eq!(d.range.start.character, 6);
     assert_eq!(d.range.end.line, 3);
     assert_eq!(d.range.end.character, 21);
     assert_eq!(d.message, "unknown option");
