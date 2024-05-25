@@ -3,7 +3,7 @@
 #### Synopsis
 
 ```Dockerfile
-WITH DOCKER [--pull <image-name>] [--load <image-name>=<target-ref>] [--compose <compose-file>]
+WITH DOCKER [--pull <image-name>] [--load [<image-name>=]<target-ref>] [--compose <compose-file>]
             [--service <compose-service>] [--allow-privileged]
   <commands>
   ...
@@ -23,7 +23,7 @@ The `WITH DOCKER` clause only supports the command [`RUN`](#run). Other commands
 A typical example of a `WITH DOCKER` clause might be:
 
 ```Dockerfile
-FROM earthly/dind:alpine-3.19-docker-25.0.3-r2
+FROM earthly/dind:alpine-3.19-docker-25.0.5-r0
 WORKDIR /test
 COPY docker-compose.yml ./
 WITH DOCKER \
@@ -45,7 +45,7 @@ For information on using `WITH DOCKER` with podman see the [Podman guide](../gui
 ##### Note
 For performance reasons, it is recommended to use a Docker image that already contains `dockerd`. If `dockerd` is not found, Earthly will attempt to install it.
 
-Earthly provides officially supported images such as `earthly/dind:alpine-3.19-docker-25.0.3-r2` and `earthly/dind:ubuntu-23.04-docker-24.0.5-1` to be used together with `WITH DOCKER`.
+Earthly provides officially supported images such as `earthly/dind:alpine-3.19-docker-25.0.5-r0` and `earthly/dind:ubuntu-23.04-docker-25.0.2-1` to be used together with `WITH DOCKER`.
 {% endhint %}
 
 {% hint style='info' %}
@@ -66,9 +66,9 @@ This option may be repeated in order to provide multiple images to be pulled.
 It is recommended that you avoid issuing `RUN docker pull ...` and use `WITH DOCKER --pull ...` instead. The classical `docker pull` command does not take into account Earthly caching and so it would redownload the image much more frequently than necessary.
 {% endhint %}
 
-##### `--load <image-name>=<target-ref>`
+##### `--load [<image-name>=]<target-ref>`
 
-Builds the image referenced by `<target-ref>` and then loads it into the temporary Docker daemon created by `WITH DOCKER`. The image can be referenced as `<image-name>` within `WITH DOCKER`.
+Builds the image referenced by `<target-ref>` and then loads it into the temporary Docker daemon created by `WITH DOCKER`. Within `WITH DOCKER`, the image can be referenced as `<image-name>`, if specified, or otherwise by the name of the image specified in the referenced target's `SAVE IMAGE` command.
 
 `<target-ref>` may be a simple target reference (`+some-target`), or a target reference with a build arg `(+some-target --SOME_BUILD_ARG=value)`.
 
