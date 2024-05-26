@@ -65,9 +65,11 @@ pub fn semantic_tokens(
     for m in matches {
         for c in m.captures {
             let range = c.node.range();
-            if range.start_point.row != range.end_point.row {
-                continue;
-            };
+            let length = if range.start_point.row != range.end_point.row {
+                doc.rope.line(range.start_point.row).len_chars() - range.start_point.column
+            } else {
+                range.end_point.column - range.start_point.column
+            } as u32;
             res.push(SemanticToken {
                 delta_line: (range.start_point.row - previous_point.row) as u32,
                 delta_start: if previous_point.row == range.start_point.row {
@@ -75,7 +77,7 @@ pub fn semantic_tokens(
                 } else {
                     range.start_point.column
                 } as u32,
-                length: (range.end_point.column - range.start_point.column) as u32,
+                length,
                 token_type: t2i[&c.index],
                 token_modifiers_bitset: 0,
             });
