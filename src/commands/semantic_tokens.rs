@@ -53,10 +53,21 @@ pub fn semantic_tokens(
     params: SemanticTokensRangeParams,
 ) -> Result<Option<SemanticTokensRangeResult>> {
     let uri = &params.text_document.uri;
+    let data = compute_semantic_tokens(backend, uri, Some(params.range))?;
+    Ok(Some(SemanticTokensRangeResult::Tokens(SemanticTokens { result_id: None, data })))
+}
+
+pub fn compute_semantic_tokens(
+    backend: &Backend,
+    uri: &Url,
+    range: Option<Range>,
+) -> Result<Vec<SemanticToken>> {
     let doc = &backend.docs.get(uri).ok_or_else(|| request_failed("unknown document: {uri}"))?;
     let query = earthfile_highlight_query();
     let mut query_cursor = QueryCursor::new();
-    query_cursor.set_point_range(params.range.to_ts_range());
+    if let Some(range) = range {
+        query_cursor.set_point_range(range.to_ts_range());
+    }
     let matches =
         query_cursor.matches(query, doc.tree.root_node(), RopeProvider(doc.rope.slice(..)));
     let mut res = Vec::new();
@@ -84,7 +95,7 @@ pub fn semantic_tokens(
             previous_point = range.start_point;
         }
     }
-    Ok(Some(SemanticTokensRangeResult::Tokens(SemanticTokens { result_id: None, data: res })))
+    Ok(res)
 }
 
 pub fn earthfile_highlight_query() -> &'static Query {

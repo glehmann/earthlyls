@@ -135,7 +135,7 @@ impl LanguageServer for Backend {
                                 token_modifiers: crate::commands::semantic_tokens::TOKEN_MODIFIERS
                                     .to_vec(),
                             },
-                            full: None,
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
                             range: Some(true),
                             ..Default::default()
                         },
@@ -334,6 +334,16 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         let res = crate::commands::semantic_tokens::semantic_tokens(self, params);
         self.info(format!("semantic_tokens() run in {:.2?}", now.elapsed())).await;
+        res
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let now = Instant::now();
+        let res = crate::commands::semantic_tokens_full::semantic_tokens_full(self, params);
+        self.info(format!("semantic_tokens_full() run in {:.2?}", now.elapsed())).await;
         res
     }
 }
