@@ -13,6 +13,7 @@ A fast language server for [earthly].
 * document symbol
 * workspace symbol
 * diagnostics
+* semantic tokens
 * incremental document update
 * watch file changes
 

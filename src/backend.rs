@@ -127,6 +127,20 @@ impl LanguageServer for Backend {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 references_provider: Some(OneOf::Left(true)),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: SemanticTokensLegend {
+                                token_types: crate::commands::semantic_tokens::TOKEN_TYPES.to_vec(),
+                                token_modifiers: crate::commands::semantic_tokens::TOKEN_MODIFIERS
+                                    .to_vec(),
+                            },
+                            full: None,
+                            range: Some(true),
+                            ..Default::default()
+                        },
+                    ),
+                ),
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         change: Some(TextDocumentSyncKind::INCREMENTAL),
@@ -310,6 +324,16 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         let res = crate::commands::symbol::symbol(self, params);
         self.info(format!("symbol() run in {:.2?}", now.elapsed())).await;
+        res
+    }
+
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> Result<Option<SemanticTokensRangeResult>> {
+        let now = Instant::now();
+        let res = crate::commands::semantic_tokens::semantic_tokens(self, params);
+        self.info(format!("semantic_tokens() run in {:.2?}", now.elapsed())).await;
         res
     }
 }

@@ -35,6 +35,24 @@ impl ToLSPRange for tree_sitter::Range {
     }
 }
 
+pub trait ToTSRange {
+    fn to_ts_range(&self) -> std::ops::Range<tree_sitter::Point>;
+}
+impl ToTSRange for lsp_types::Range {
+    fn to_ts_range(&self) -> std::ops::Range<tree_sitter::Point> {
+        std::ops::Range {
+            start: tree_sitter::Point {
+                row: self.start.line as usize,
+                column: self.start.character as usize,
+            },
+            end: tree_sitter::Point {
+                row: self.end.line as usize,
+                column: self.end.character as usize,
+            },
+        }
+    }
+}
+
 pub fn request_failed(msg: &str) -> Error {
     Error {
         code: tower_lsp::jsonrpc::ErrorCode::ServerError(-32803),
