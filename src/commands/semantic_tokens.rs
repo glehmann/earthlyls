@@ -1,12 +1,12 @@
-use std::{collections::HashMap, sync::OnceLock};
+use std::{cmp::Ordering, collections::HashMap, sync::OnceLock};
 
 use maplit::hashmap;
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
-use tree_sitter::{Point, Query, QueryCursor};
+use tree_sitter::{Query, QueryCursor};
 
 use crate::{
     backend::Backend,
-    util::{request_failed, RopeProvider, ToTSRange},
+    util::{request_failed, RopeProvider, ToLSPRange, ToTSRange},
 };
 
 pub const TOKEN_TYPES: [SemanticTokenType; 11] = [
@@ -113,7 +113,7 @@ pub fn compute_semantic_tokens(
     );
     for m in matches {
         for c in m.captures {
-            tmp.push((c.node.range(), capture_to_token_idx()[&c.index]))
+            tmp.push((c.node.range().to_lsp_range(), capture_to_token_idx()[&c.index]))
         }
     }
     // get the tokens from the bash trees
@@ -125,37 +125,89 @@ pub fn compute_semantic_tokens(
         );
         for m in matches {
             for c in m.captures {
-                tmp.push((c.node.range(), bash_capture_to_token_idx()[&c.index]))
+                tmp.push((c.node.range().to_lsp_range(), bash_capture_to_token_idx()[&c.index]))
             }
         }
     }
     // reorder the tokens based on the start position
-    tmp.sort_by_key(|(r, _)| r.start_point);
+    tmp.sort_by(|x, y| {
+        let start_res = x.0.start.cmp(&y.0.start);
+        if start_res != Ordering::Equal {
+            start_res
+        } else {
+            x.0.end.cmp(&y.0.end)
+        }
+    });
+    // rework the tokens to avoid any overlapping range
+    let mut tmp2: Vec<(Range, u32)> = Vec::new();
+    for (mut r, t) in tmp {
+        // only keep the first line of a token that covers several lines
+        if r.start.line != r.end.line {
+            r.end.line = r.start.line;
+            r.end.character = doc.rope.line(r.start.line as usize).len_chars() as u32;
+        }
+        // find the tokens to update, if any
+        let mut to_append: Vec<(Range, u32)> = Vec::new();
+        let mut to_drop = 0;
+        for (pr, pt) in tmp2.iter().rev() {
+            if pr.start >= r.start {
+                if pr.end <= r.end {
+                    // drop the previous token
+                } else {
+                    // push R
+                    let mut prr = *pr;
+                    prr.start = r.end;
+                    to_append.push((prr, *pt));
+                }
+            } else if pr.end <= r.start {
+                break;
+            } else if pr.end <= r.end {
+                // push L
+                let mut prl = *pr;
+                prl.end = r.start;
+                to_append.push((prl, *pt));
+            } else {
+                // push LR
+                let mut prr = *pr;
+                prr.start = r.end;
+                to_append.push((prr, *pt));
+                let mut prl = *pr;
+                prl.end = r.start;
+                to_append.push((prl, *pt));
+            }
+            to_drop += 1;
+            to_append.push((*pr, *pt));
+        }
+        to_append.push((r, t));
+        to_append.sort_by(|x, y| {
+            let start_res = x.0.start.cmp(&y.0.start);
+            if start_res != Ordering::Equal {
+                start_res
+            } else {
+                x.0.end.cmp(&y.0.end)
+            }
+        });
+        tmp2.truncate(tmp2.len() - to_drop);
+        tmp2.append(&mut to_append);
+    }
     // then compute the final result with the offset positions
     let mut res = Vec::new();
-    let mut previous_point = Point { row: 0, column: 0 };
-    for (r, t) in tmp {
-        // eprintln!(
-        //     "{}:{}->{}:{} {t}",
-        //     r.start_point.row, r.start_point.column, r.end_point.row, r.end_point.column
-        // );
-        let length = if r.start_point.row != r.end_point.row {
-            doc.rope.line(r.start_point.row).len_chars() - r.start_point.column
-        } else {
-            r.end_point.column - r.start_point.column
-        } as u32;
+    let mut previous = Position { line: 0, character: 0 };
+    for (r, t) in tmp2 {
+        // eprintln!("{}:{}->{}:{} {t}", r.start.line, r.start.character, r.end.line, r.end.character);
+        let length = r.end.character - r.start.character;
         res.push(SemanticToken {
-            delta_line: (r.start_point.row - previous_point.row) as u32,
-            delta_start: if previous_point.row == r.start_point.row {
-                r.start_point.column - previous_point.column
+            delta_line: r.start.line - previous.line,
+            delta_start: if previous.line == r.start.line {
+                r.start.character - previous.character
             } else {
-                r.start_point.column
-            } as u32,
+                r.start.character
+            },
             length,
             token_type: t,
             token_modifiers_bitset: 0,
         });
-        previous_point = r.start_point;
+        previous = r.start;
     }
     Ok(res)
 }
