@@ -30,6 +30,11 @@ The `earthlyls` extension for Visual Studio Code is available in the [marketplac
 `earthlyls` can either be installed manually or with [mason.nvim](https://github.com/williamboman/mason.nvim), which
 is configured to download the binary for your platform from [earthlyls’ releases](https://github.com/glehmann/earthlyls/releases).
 
+### Zed
+
+The [`earthfile` extension for Zed](https://github.com/glehmann/earthfile.zed) is available in the Zed extensions.
+Open the command palette with `Cmd-Shif-P`, enter `zed: extensions` and install the `earthfile` extension.
+
 ### helix
 
 Helix from the `main` branch comes preconfigured with earthlyls support. Just [install it](INSTALL.md) and enjoy!
