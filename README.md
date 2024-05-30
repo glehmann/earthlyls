@@ -6,16 +6,17 @@ A fast language server for [earthly].
 
 `earthlyls` supports the following LSP features:
 
-* hover
-* goto definition
-* goto declaration
-* references
-* document symbol
-* workspace symbol
+* completion
 * diagnostics
-* semantic tokens
+* document symbol
+* goto declaration
+* goto definition
+* hover
 * incremental document update
+* references
+* semantic tokens
 * watch file changes
+* workspace symbol
 
 ## Text editor configuration
 

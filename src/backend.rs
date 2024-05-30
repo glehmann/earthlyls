@@ -122,6 +122,20 @@ impl LanguageServer for Backend {
         self.info(format!("initialize() run in {:.2?}", now.elapsed())).await;
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
+                completion_provider: Some(CompletionOptions {
+                    resolve_provider: Some(false),
+                    trigger_characters: Some(vec![
+                        " ".to_string(),
+                        "=".to_string(),
+                        "$".to_string(),
+                        "{".to_string(),
+                        "-".to_string(),
+                    ]),
+                    all_commit_characters: None,
+                    work_done_progress_options: Default::default(),
+                    completion_item: None,
+                }),
+
                 definition_provider: Some(OneOf::Left(true)),
                 declaration_provider: Some(DeclarationCapability::Simple(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
@@ -344,6 +358,13 @@ impl LanguageServer for Backend {
         let now = Instant::now();
         let res = crate::commands::semantic_tokens_full::semantic_tokens_full(self, params);
         self.info(format!("semantic_tokens_full() run in {:.2?}", now.elapsed())).await;
+        res
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        let now = Instant::now();
+        let res = crate::commands::completion::completion(self, params);
+        self.info(format!("completion() run in {:.2?}", now.elapsed())).await;
         res
     }
 }
