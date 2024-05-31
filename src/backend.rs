@@ -124,13 +124,12 @@ impl LanguageServer for Backend {
             capabilities: ServerCapabilities {
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
-                    trigger_characters: Some(vec![
-                        " ".to_string(),
-                        "=".to_string(),
-                        "$".to_string(),
-                        "{".to_string(),
-                        "-".to_string(),
-                    ]),
+                    trigger_characters: Some(
+                        crate::commands::completion::TRIGGER_CHARACTERS
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect(),
+                    ),
                     all_commit_characters: None,
                     work_done_progress_options: Default::default(),
                     completion_item: None,
