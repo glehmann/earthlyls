@@ -5,7 +5,7 @@
 	"icon": "logo.png",
 	"author": "Gaëtan Lehmann",
 	"license": "MIT",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/glehmann/earthlyls"
