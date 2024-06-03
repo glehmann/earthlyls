@@ -11,7 +11,7 @@ async fn should_publish_syntax_diagnostics() {
     let dp = ctx.recv::<PublishDiagnosticsParams>().await;
     assert_eq!(dp.uri, ctx.doc_uri("Earthfile"));
     let ds = dp.diagnostics;
-    assert_eq!(ds.len(), 4);
+    assert_eq!(ds.len(), 5);
 
     let d = &ds[0];
     assert_eq!(d.range.start.line, 6);
@@ -40,6 +40,13 @@ async fn should_publish_syntax_diagnostics() {
     assert_eq!(d.range.end.line, 5);
     assert_eq!(d.range.end.character, 17);
     assert_eq!(d.message, "shell syntax error");
+
+    let d = &ds[4];
+    assert_eq!(d.range.start.line, 0);
+    assert_eq!(d.range.start.character, 0);
+    assert_eq!(d.range.end.line, 0);
+    assert_eq!(d.range.end.character, 0);
+    assert_eq!(d.message, "no version specified");
 
     // panic!("Don’t panic!");
 }

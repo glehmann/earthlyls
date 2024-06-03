@@ -3,6 +3,7 @@ use tower_lsp::{jsonrpc::Result, lsp_types::*};
 use crate::{backend::Backend, document::Document};
 
 pub mod deprecated_build_arg;
+pub mod missing_version;
 pub mod syntax_error;
 pub mod unknown_option;
 
@@ -11,6 +12,7 @@ pub fn doc_diagnostics(doc: &Document) -> Result<Vec<Diagnostic>> {
     ds.append(&mut deprecated_build_arg::deprecated_build_arg(doc)?);
     ds.append(&mut unknown_option::unknown_option(doc)?);
     ds.append(&mut syntax_error::syntax_error(doc)?);
+    ds.append(&mut missing_version::missing_version(doc)?);
     Ok(ds)
 }
 
