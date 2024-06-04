@@ -33,7 +33,7 @@ tokio = { version = "1.38.0", features = ["full"] }
 tower-lsp = "0.20.0"
 tree-sitter = "0.22.2"
 tree-sitter-bash = "0.21.0"
-tree-sitter-earthfile = "0.5.3"
+tree-sitter-earthfile = "0.5.4"
 
 [profile.release]
 strip = "symbols"

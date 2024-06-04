@@ -1005,9 +1005,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-earthfile"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf70c3f6ff12bf73cfd6bf29efc261fb12c6790a95fc4b3376aac569a6ab4ee2"
+checksum = "b57dd8492b922e10444207c373fb02388f4abfa6fff2f8764a41a7f02782bf8a"
 dependencies = [
  "cc",
  "tree-sitter",
