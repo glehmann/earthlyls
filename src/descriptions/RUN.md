@@ -212,7 +212,7 @@ build:
 The `--aws` flag has experimental status. To use this feature, it must be enabled via `VERSION --run-with-aws 0.8`.
 {% endhint %}
 
-Makes AWS credentials available to the executed command via the host's environment variables or ~/.aws directory. 
+Makes AWS credentials available to the executed command via the host's environment variables or ~/.aws directory.
 
 ##### `--oidc <oidc-spec>` (experimental)
 
@@ -241,16 +241,16 @@ Click [here](../cloud/oidc.md#openid-connect-oidc-authentication) for more infor
 The `--raw-output` flag has experimental status. To use this feature, it must be enabled via `VERSION --raw-output `.
 {% endhint %}
 
-Outputs line without target name. 
+Outputs line without target name.
 
 ###### Examples:
 
 Given this target:
 ```Dockerfile
-raw: 
+raw:
     RUN --raw-output echo "::group::"
     RUN echo "should have prefix"
-    RUN --raw-output echo "::endgroup::" 
+    RUN --raw-output echo "::endgroup::"
 ```
 
 The following is output:
