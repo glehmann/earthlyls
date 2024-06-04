@@ -2,7 +2,7 @@
 
 A fast language server for [earthly].
 
-![Screenshot of yage Earthfile in Visual Studio Code](https://raw.githubusercontent.com/glehmann/earthlyls/0.2.2/editor/vscode/screenshot.png)
+![Screenshot of yage Earthfile in Visual Studio Code](https://raw.githubusercontent.com/glehmann/earthlyls/0.5.1/editor/vscode/screenshot.png)
 
 `earthlyls` supports the following LSP features:
 
