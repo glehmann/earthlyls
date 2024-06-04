@@ -13,6 +13,7 @@ pub fn unknown_option(doc: &Document) -> Result<Vec<Diagnostic>> {
             range: node.range().to_lsp_range(),
             message: "unknown option".to_string(),
             severity: Some(DiagnosticSeverity::ERROR),
+            source: Some(super::SOURCE.to_string()),
             ..Default::default()
         })
         .collect())

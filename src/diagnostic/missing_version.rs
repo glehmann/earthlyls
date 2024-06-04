@@ -23,6 +23,7 @@ pub fn missing_version(doc: &Document) -> Result<Vec<Diagnostic>> {
             range: Range::default(),
             message: "no version specified".to_string(),
             severity: Some(DiagnosticSeverity::ERROR),
+            source: Some(super::SOURCE.to_string()),
             ..Default::default()
         }])
     }

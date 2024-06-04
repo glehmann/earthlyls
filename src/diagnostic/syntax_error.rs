@@ -17,6 +17,7 @@ pub fn syntax_error(doc: &Document) -> Result<Vec<Diagnostic>> {
             range: node.range().to_lsp_range(),
             message: "shell syntax error".to_string(),
             severity: Some(DiagnosticSeverity::ERROR),
+            source: Some(super::SOURCE.to_string()),
             ..Default::default()
         }))
         .collect())

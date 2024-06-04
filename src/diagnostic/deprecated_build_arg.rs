@@ -14,6 +14,7 @@ pub fn deprecated_build_arg(doc: &Document) -> Result<Vec<Diagnostic>> {
             message: "--build-arg is deprecated. Use --<build-arg-key>=<build-arg-value> instead."
                 .to_string(),
             severity: Some(DiagnosticSeverity::WARNING),
+            source: Some(super::SOURCE.to_string()),
             ..Default::default()
         })
         .collect())

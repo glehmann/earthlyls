@@ -7,6 +7,8 @@ pub mod missing_version;
 pub mod syntax_error;
 pub mod unknown_option;
 
+pub const SOURCE: &str = "earthlyls";
+
 pub fn doc_diagnostics(doc: &Document) -> Result<Vec<Diagnostic>> {
     let mut ds = Vec::new();
     ds.append(&mut deprecated_build_arg::deprecated_build_arg(doc)?);
