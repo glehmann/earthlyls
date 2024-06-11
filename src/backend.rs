@@ -214,7 +214,7 @@ impl LanguageServer for Backend {
                 }
             }
             if updated {
-                    self.info(format!("updated document {}", uri)).await;
+                self.info(format!("updated document {}", uri)).await;
             } else {
                 self.docs.insert(uri.to_owned(), Document::open(&change.text));
                 self.info(format!("created document {}", uri)).await;
