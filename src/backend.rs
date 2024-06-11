@@ -211,10 +211,11 @@ impl LanguageServer for Backend {
                 if let Some(mut doc) = self.docs.get_mut(&uri) {
                     doc.update(range, &change.text);
                     updated = true;
-                    self.info(format!("updated document {}", uri)).await;
                 }
             }
-            if !updated {
+            if updated {
+                    self.info(format!("updated document {}", uri)).await;
+            } else {
                 self.docs.insert(uri.to_owned(), Document::open(&change.text));
                 self.info(format!("created document {}", uri)).await;
             }
