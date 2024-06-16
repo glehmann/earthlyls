@@ -1,5 +1,4 @@
-use std::collections::VecDeque;
-
+use rayon::prelude::*;
 use tower_lsp::{jsonrpc::Result, lsp_types::*};
 
 use crate::{backend::Backend, document::Document};
@@ -25,16 +24,22 @@ pub async fn publish_diagnostics(backend: &Backend) -> Result<()> {
     // a dashmap element during an await call — it may lead to a dead lock
     // it may be interesting to look at alternatives like scc, memo_map, c-map, async-map, …
     // see: https://github.com/xacrimon/dashmap/issues/150
-    let mut res = VecDeque::new();
-    for mut item in backend.docs.iter_mut() {
-        let uri = item.key().to_owned();
-        let ds = doc_diagnostics(item.value())?;
-        if ds != item.diagnostics {
-            item.diagnostics.clone_from(&ds);
-            res.push_back((uri, ds));
-        }
-    }
-    for (uri, ds) in res {
+    let res = backend
+        .docs
+        .par_iter_mut()
+        .map(|mut item| {
+            let uri = item.key().to_owned();
+            let ds = doc_diagnostics(item.value())?;
+            if ds != item.diagnostics {
+                item.diagnostics.clone_from(&ds);
+                Ok(Some((uri, ds)))
+            } else {
+                Ok(None)
+            }
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    for (uri, ds) in res.into_iter().flatten() {
         backend.client.publish_diagnostics(uri, ds, None).await;
     }
     Ok(())
