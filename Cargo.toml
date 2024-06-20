@@ -19,7 +19,7 @@ members = ["xtask"]
 version = "0.5.2"
 
 [dependencies]
-clap = { version = "4.5.6", features = ["derive"] }
+clap = { version = "4.5.7", features = ["derive"] }
 clean-path = "0.2.1"
 dashmap = { version = "5.5.3", features = ["rayon"] }
 glob = "0.3.1"
