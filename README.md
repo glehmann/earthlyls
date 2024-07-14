@@ -38,7 +38,7 @@ Open the command palette with `Cmd-Shif-P`, enter `zed: extensions` and install 
 
 ### helix
 
-Helix from the `main` branch comes preconfigured with earthlyls support. Just [install it](INSTALL.md) and enjoy!
+Helix from the 24.07 branch comes preconfigured with earthlyls support. Just [install it](INSTALL.md) and enjoy!
 
 For older versions, add this in your `languages.toml`:
 
