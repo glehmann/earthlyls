@@ -28,7 +28,7 @@ maplit = "1.0.2"
 path-slash = "0.2.1"
 rayon = "1.10.0"
 ropey = "1.6.1"
-serde = "1.0.209"
+serde = "1.0.214"
 thiserror = "1.0.63"
 tokio = { version = "1.40.0", features = ["full"] }
 tower-lsp = "0.20.0"
