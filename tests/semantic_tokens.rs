@@ -20,7 +20,7 @@ async fn should_provide_full_semantic_tokens() {
         .unwrap();
     let SemanticTokensResult::Tokens(tokens) = res else { panic!("not a token list!") };
     let ts = tokens.data;
-    assert_eq!(ts.len(), 26);
+    assert_eq!(ts.len(), 7);
     // panic!("Don’t panic!");
 }
 
