@@ -16,7 +16,7 @@ categories = ["development-tools"]
 members = ["xtask"]
 
 [workspace.package]
-version = "0.5.4"
+version = "0.5.5"
 
 [dependencies]
 clap = { version = "4.5.26", features = ["derive"] }
