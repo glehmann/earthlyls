@@ -29,7 +29,7 @@ path-slash = "0.2.1"
 rayon = "1.10.0"
 ropey = "1.6.1"
 serde = "1.0.219"
-thiserror = "2.0.11"
+thiserror = "2.0.12"
 tokio = { version = "1.43.0", features = ["full"] }
 tower-lsp = "0.20.0"
 tree-sitter = "0.22.2"
