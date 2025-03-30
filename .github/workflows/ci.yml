@@ -254,3 +254,21 @@ jobs:
         pipx install mdsplit
         cargo xtask generate-descriptions
         git diff --exit-code
+
+  dependabot-auto-merge:
+    needs:
+      - test
+      - vscode-extension
+      - rustfmt
+      - clippy
+      - descriptions
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+    steps:
+    - run: gh pr merge --auto --rebase "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
