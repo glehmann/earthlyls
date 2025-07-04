@@ -35,11 +35,11 @@ impl Backend {
             let dir = item.value();
             let name = item.key();
             if let Err(e) = self.load_workspace_docs(dir) {
-                self.error(format!("can't load {name} workspace documents: {}", e)).await;
+                self.error(format!("can't load {name} workspace documents: {e}")).await;
             }
         }
         if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
-            self.error(format!("can't publish diagnostic: {}", e)).await;
+            self.error(format!("can't publish diagnostic: {e}")).await;
         }
     }
 
@@ -197,7 +197,7 @@ impl LanguageServer for Backend {
             Document::open(&params.text_document.text),
         );
         if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
-            self.error(format!("can't publish diagnostic: {}", e)).await;
+            self.error(format!("can't publish diagnostic: {e}")).await;
         }
         self.info(format!("did_open() run in {:.2?}", now.elapsed())).await;
     }
@@ -214,14 +214,14 @@ impl LanguageServer for Backend {
                 }
             }
             if updated {
-                self.info(format!("updated document {}", uri)).await;
+                self.info(format!("updated document {uri}")).await;
             } else {
                 self.docs.insert(uri.to_owned(), Document::open(&change.text));
-                self.info(format!("created document {}", uri)).await;
+                self.info(format!("created document {uri}")).await;
             }
         }
         if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
-            self.error(format!("can't publish diagnostic: {}", e)).await;
+            self.error(format!("can't publish diagnostic: {e}")).await;
         }
         self.info(format!("did_change() run in {:.2?}", now.elapsed())).await;
     }
@@ -280,7 +280,7 @@ impl LanguageServer for Backend {
             }
         }
         if let Err(e) = crate::diagnostic::publish_diagnostics(self).await {
-            self.error(format!("can't publish diagnostics: {}", e)).await;
+            self.error(format!("can't publish diagnostics: {e}")).await;
         }
         self.info(format!("did_change_watched_files() run in {:.2?}", now.elapsed())).await;
     }
