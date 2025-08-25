@@ -22,7 +22,7 @@ version = "0.5.5"
 clap = { version = "4.5.45", features = ["derive"] }
 clean-path = "0.2.1"
 dashmap = { version = "6.1.0", features = ["rayon"] }
-glob = "0.3.2"
+glob = "0.3.3"
 glob-match = "0.2.1"
 maplit = "1.0.2"
 path-slash = "0.2.1"
