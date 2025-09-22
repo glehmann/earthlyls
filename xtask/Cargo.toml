@@ -7,7 +7,7 @@ authors = ["Gaëtan Lehmann <gaetan.lehmann@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 clap = { version = "4.5.47", features = ["derive", "env", "wrap_help"] }
 toml_edit = "0.23.4"
 xshell = "0.2"
