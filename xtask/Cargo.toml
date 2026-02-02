@@ -8,6 +8,6 @@ authors = ["Gaëtan Lehmann <gaetan.lehmann@gmail.com>"]
 
 [dependencies]
 anyhow = "1.0.99"
-clap = { version = "4.5.54", features = ["derive", "env", "wrap_help"] }
+clap = { version = "4.5.56", features = ["derive", "env", "wrap_help"] }
 toml_edit = "0.24.0"
 xshell = "0.2"
