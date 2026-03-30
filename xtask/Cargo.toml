@@ -9,5 +9,5 @@ authors = ["Gaëtan Lehmann <gaetan.lehmann@gmail.com>"]
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.0", features = ["derive", "env", "wrap_help"] }
-toml_edit = "0.25.5"
+toml_edit = "0.25.8"
 xshell = "0.2"
