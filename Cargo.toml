@@ -21,7 +21,7 @@ version = "0.5.5"
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
 clean-path = "0.2.1"
-dashmap = { version = "6.1.0", features = ["rayon"] }
+dashmap = { version = "6.2.1", features = ["rayon"] }
 glob = "0.3.3"
 glob-match = "0.2.1"
 maplit = "1.0.2"
