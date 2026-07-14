@@ -244,13 +244,12 @@ impl LanguageServer for Backend {
                     let content = match std::fs::read_to_string(&path) {
                         Ok(content) => content,
                         Err(e) => {
-                            self.error(format!("can't read document {}: {:?}", &event.uri, e))
-                                .await;
+                            self.error(format!("can't read document {}: {:?}", event.uri, e)).await;
                             continue;
                         }
                     };
                     self.docs.insert(event.uri.to_owned(), Document::new(&content));
-                    self.info(format!("loaded document {}", &event.uri)).await;
+                    self.info(format!("loaded document {}", event.uri)).await;
                 }
                 FileChangeType::CHANGED => {
                     let Ok(path) = event.uri.to_file_path() else {
@@ -260,8 +259,7 @@ impl LanguageServer for Backend {
                     let content = match std::fs::read_to_string(&path) {
                         Ok(content) => content,
                         Err(e) => {
-                            self.error(format!("can't read document {}: {:?}", &event.uri, e))
-                                .await;
+                            self.error(format!("can't read document {}: {:?}", event.uri, e)).await;
                             continue;
                         }
                     };
@@ -270,11 +268,11 @@ impl LanguageServer for Backend {
                     } else {
                         self.docs.insert(event.uri.to_owned(), Document::new(&content));
                     }
-                    self.info(format!("(re)loaded document {}", &event.uri)).await;
+                    self.info(format!("(re)loaded document {}", event.uri)).await;
                 }
                 FileChangeType::DELETED => {
                     self.docs.remove(&event.uri);
-                    self.info(format!("removed document {}", &event.uri)).await;
+                    self.info(format!("removed document {}", event.uri)).await;
                 }
                 _ => self.warn(format!("unsupported file change type: {:?}", event.typ)).await,
             }
